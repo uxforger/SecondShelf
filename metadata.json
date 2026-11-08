@@ -1,0 +1,6 @@
+{
+  "name": "SecondShelf",
+  "description": "B2B food inventory recovery and traceability network for distributors, commercial buyers, and recovery partners in Lagos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

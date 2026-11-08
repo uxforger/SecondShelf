@@ -1,0 +1,1201 @@
+Reproduce the existing SecondShelf visual system described below. Do not reinterpret it, replace its typography with a generic SaaS scale, enlarge all dashboard headings, or apply one uniform font size to every component.
+
+Use Plus Jakarta Sans for headings and selected prominent numbers, Inter for interface text, and IBM Plex Mono selectively for identifiers and technical data.
+
+Preserve the specified font weights, including intermediate weights such as 550, 650, and 750. Preserve negative heading letter spacing.
+
+Build desktop and mobile as different arrangements of the same components. Do not scale the entire desktop interface down.
+
+The desktop workspace uses a fixed sidebar, a top header, a constrained content area, four metric columns, asymmetric dashboard grids, and compact data tables. Mobile uses a navigation drawer, two metric columns, stacked panels, and inventory cards instead of a compressed table.
+
+2. Exact fonts and loading
+Font families
+Purpose	Exact family
+Headings and display typography	Plus Jakarta Sans
+Body text, navigation, buttons, forms, tables	Inter
+Batch IDs, technical labels, selected quantities and chart labels	IBM Plex Mono
+Exact Google Fonts import
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;450;500;550;600;650;700;750&family=Plus+Jakarta+Sans:wght@400;500;600;650;700;750;800&display=swap");
+These are the weights loaded. Not every loaded weight is used in every component.
+
+Font variables
+:root {
+  --heading: "Plus Jakarta Sans", sans-serif;
+  --body: "Inter", sans-serif;
+  --mono: "IBM Plex Mono", monospace;
+}
+Critical font-loading instruction
+Do not load only Inter 400 and 700, then expect font-weight: 550 or 650 to look identical.
+
+Use the supplied weight import or equivalent variable-font files that support those weights.
+
+3. Base typography
+body {
+  font-family: var(--body);
+  font-size: 13px;
+  color: #27352e;
+  background: #f8faf7;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--heading);
+  color: #0b3e2e;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+
+h1 {
+  font-size: 28px;
+  line-height: 1.35;
+}
+
+h2 {
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+h3 {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+p {
+  line-height: 1.65;
+}
+
+small {
+  font-size: 11px;
+}
+
+button {
+  font-weight: 500;
+}
+The project uses Tailwind’s reset. Ordinary interface text inherits its normal 1.5 line height unless a component supplies another value.
+
+Important hierarchy distinction
+The base heading sizes are not the sizes of every heading:
+
+Workspace page titles: normally 28px
+Dashboard panel titles: 14px
+Dashboard banner heading: 27px
+Public landing hero: 59px
+Modal heading: 19px
+Do not turn every panel title into a 20–24px heading.
+
+4. Exact colour tokens
+These affect the typography’s appearance significantly.
+
+:root {
+  --forest: #0b3e2e;
+  --fresh: #22c55e;
+  --orange: #f97316;
+  --orange-text: #b74c16;
+
+  --cream: #f8faf7;
+  --charcoal: #1f2937;
+
+  --text: #27352e;
+  --muted: #626e5c;
+  --border: #e7eae4;
+  --surface: #ffffff;
+
+  --soft-green: #eef4e9;
+  --light-green: #e4f1e9;
+  --soft-orange: #fff4e9;
+
+  --red: #a72d2d;
+  --soft-red: #fff0ee;
+}
+Text colour rules
+Headings: #0B3E2E
+Main interface text: #27352E
+Secondary text: #626E5C
+Orange warning text: #B74C16
+Error text: #A72D2D
+White text on forest-green surfaces
+Do not use bright #F97316 for small warning text on white.
+5. Actual responsive breakpoints
+The implementation does not use only standard Tailwind md and lg breakpoints.
+
+It uses these explicit media queries:
+
+@media (min-width: 1600px) { ... }
+
+@media (max-width: 1200px) { ... }
+
+@media (max-width: 1000px) { ... }
+
+@media (max-width: 900px) { ... }
+
+@media (max-width: 480px) { ... }
+They accumulate in that order.
+
+Viewport	Applied layout
+1600px and above	Expanded desktop
+1201–1599px	Primary desktop
+1001–1200px	Compact desktop
+901–1000px	Narrow desktop
+481–900px	Tablet / drawer layout
+480px and below	Mobile layout
+Both 1440px and 1280px use the same primary desktop rules.
+
+768px uses the drawer layout.
+
+375px and 390px use the same mobile rules.
+
+6. Workspace page structure
+The actual structural arrangement is:
+
+App shell
+├── Fixed sidebar
+│   ├── Brand
+│   ├── Workspace label
+│   ├── Business / role selector
+│   ├── Main navigation
+│   └── Bottom section
+│       ├── Brand note
+│       ├── Settings
+│       ├── Help
+│       └── User identity
+│
+└── Main shell
+    ├── Topbar
+    └── Main content
+        ├── Breadcrumb row
+        ├── Page title + contextual actions
+        ├── Page-specific content
+        └── Workspace footer
+Primary desktop dimensions
+.sidebar {
+  width: 238px;
+  position: fixed;
+  inset: 0 auto 0 0;
+}
+
+.main-shell {
+  margin-left: 238px;
+}
+
+.topbar {
+  height: 76px;
+  padding: 0 34px;
+}
+
+.main-content {
+  max-width: 1570px;
+  margin: auto;
+  padding: 25px 34px 0;
+}
+The sidebar is fixed. The topbar is not implemented as a sticky header.
+
+Content-width example
+At a viewport of 1440px:
+
+1440 − 238 sidebar − 34 left padding − 34 right padding
+= 1134px usable content width
+At 1280px:
+
+1280 − 238 − 34 − 34
+= 974px usable content width
+This is why the layout feels aligned and controlled: the content is not stretched edge-to-edge.
+
+7. Workspace typography: desktop versus mobile
+The following table gives the effective primary-desktop and small-mobile sizes.
+
+Desktop: 1201–1599px
+Mobile: 480px and below
+
+Element	Font	Weight	Desktop	Mobile
+Page title	Plus Jakarta Sans	700	28px	24px
+Page subtitle	Inter	400	11px	10px
+Panel heading	Plus Jakarta Sans	700	14px	13px
+Panel supporting text	Inter	400	11px	8px
+Standard button	Inter	500	12px	12px unless overridden
+Page-title action button	Inter	500	12px	11px
+Text-link button	Inter	600	11px	Context-specific
+Navigation item	Inter	500	12px	12px
+Active navigation item	Inter	650	12px	12px
+Workspace name	Inter	650	11px	12px
+Workspace role subtitle	Inter	400	9px	10px
+Topbar workspace name	Inter	600	12px	11px
+Topbar location	Inter	400	10px	Hidden
+Breadcrumb	Inter	400 / 500	9px	9px
+Sample-data caption	IBM Plex Mono	400	7px	6px
+Standard status badge	Inter	500	10px	10px
+Inventory status badge	Inter	500	10px	9px
+Metric label	Inter	400	11px	8px
+Metric value	Plus Jakarta Sans	700	27px	25px
+Metric supporting text	Inter	400	10px	7px
+Product name in inventory	Inter	550	12px	12px
+Product category metadata	Inter	Inherits context	9px	9px
+Inline batch ID under product	IBM Plex Mono	Inherits context	7px	7px
+Inventory quantity	IBM Plex Mono	500	12px	16px
+Expiry date	Inter	400	11px	11px
+Expiry supporting text	Inter	400	9px	9px
+Table column heading	Inter	500	10px	Replaced by card labels
+Table cell text	Inter	400	12px	10px base
+Activity title	Inter	500	11px	10px
+Activity supporting text	Inter	400	10px	9px
+Recent transaction name	Inter	550	11px	11px
+Recent transaction metadata	Inter	500 inherited from button	10px	10px
+Line height and tracking
+Page titles: 1.35, tracking -0.035em
+Panel headings: 1.45, tracking -0.3px
+Buttons: 1.4
+General paragraphs: 1.65
+Mobile page subtitle: 1.7
+Mobile panel supporting paragraph: 1.7
+Metric values: 1.2, tracking -1px
+Metric supporting text:
+Desktop: 1.6
+Mobile: 1.8
+Sample-data caption:
+Desktop tracking: 0.6px
+Mobile tracking: 0.2px
+Note: The implementation intentionally contains very compact microcopy. The 6–9px sizes above are the actual values, not a general recommendation for every future screen.
+
+8. Sidebar specification
+Desktop
+.sidebar {
+  width: 238px;
+  background: #fdfefa;
+  border-right: 1px solid #e7eae4;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-brand {
+  padding: 31px 24px 34px;
+}
+
+.side-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0 14px;
+}
+Brand wordmark
+Font: Plus Jakarta Sans
+Weight: 800
+Size: 22px
+Letter spacing: -1.1px
+Icon: 28 × 32px
+Icon/text gap: 8px
+Workspace selector
+Margin: 0 17px 29px
+Padding: 11px 10px
+Border: 1px solid #E7EAE4
+Radius: 6px
+Internal gap: 10px
+Initials tile: 32 × 33px
+Initials typography: Plus Jakarta Sans, 12px / 750
+Name/subtitle gap: 4px
+Navigation item
+.nav-item {
+  min-height: 43px;
+  padding: 11px 13px;
+  gap: 12px;
+  border-radius: 5px;
+}
+Icons: 19px
+Default icon stroke: 1.6
+Active icon stroke: 2
+Active background: #EAF0E4
+Active text: forest green
+Active weight: 650
+Mobile/tablet drawer
+At 900px and below:
+
+Width: 260px
+Hidden with translateX(-100%) and visibility: hidden
+Open with translateX(0) and visibility: visible
+Transition: 0.2s
+Main content no longer has a left margin
+Drawer backdrop: #10271977
+Backdrop blur: 2px
+Navigation item height: at least 45px
+Navigation item padding: 10px 15px
+Sidebar promotional note is hidden
+Brand padding: 25px 20px
+9. Header and page-title layout
+Desktop topbar
+Height: 76px
+Horizontal padding: 34px
+White surface
+Bottom border: 1px solid #E7EAE4
+Left and right groups use 18px gaps
+Location icon: 14px
+Notification icon: 19px
+Avatar: 29 × 29px
+Vertical separator: 1 × 18px
+Tablet/mobile topbar
+At 900px and below:
+
+Height: 67px
+Horizontal padding: 20px
+Group gaps: 12px
+Show hamburger navigation
+Hide location text
+Hide “Live prototype” label
+Hide the trailing profile chevron
+At 480px and below:
+
+Horizontal padding: 16px
+Page title row
+Desktop:
+
+.page-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+Tablet/mobile:
+
+Wrap content
+Align to the top
+Gap: 17px, then 16px on small mobile
+Bottom margin: 21px
+On small mobile, actions occupy the full width
+Action buttons share the available width using flex: 1
+Do not squeeze the title and two action buttons into one narrow mobile row.
+
+10. Dashboard layout
+Desktop order
+Breadcrumb
+
+Page title + actions
+
+Forest-green action banner
+
+Four metric cards
+
+Inventory chart              Needs-your-attention panel
+          1.7fr              1fr, minimum 270px
+
+At-risk inventory table — full width
+
+Recent transactions          Latest activity
+          1.2fr              1fr
+
+Footer
+Exact grids
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.7fr)
+    minmax(270px, 1fr);
+  gap: 22px;
+}
+
+.bottom-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 22px;
+}
+Narrow desktop
+At 1200px and below:
+
+.dashboard-grid {
+  grid-template-columns:
+    minmax(0, 1.4fr)
+    minmax(260px, 1fr);
+  gap: 17px;
+}
+At 1000px and below:
+
+Dashboard chart and attention panel stack
+Bottom grid becomes one column
+Attention panel temporarily arranges its two items side-by-side
+At 480px and below:
+
+Attention panel returns to a vertically stacked list
+Mobile dashboard order
+Breadcrumb
+
+Page title
+Full-width action row
+
+Banner
+
+Metric 1    Metric 2
+Metric 3    Metric 4
+
+Chart
+
+Needs attention
+
+At-risk inventory cards
+
+Recent transactions
+
+Latest activity
+
+Footer
+11. Dashboard banner
+Desktop
+Background: #0B3E2E
+Radius: 7px
+Minimum height: 214px
+Bottom margin: 24px
+Text area padding: 26px 30px
+Illustration area: 37% width, minimum 280px
+Illustration maximum width: 370px
+Banner typography
+Element	Desktop	Mobile
+Eyebrow	Inter 650, 7px, tracking 1.4px	Inter 650, 5.8px, tracking 0.9px
+Heading	Plus Jakarta Sans 650, 27px	Plus Jakarta Sans 650, 21px
+Heading tracking	−1.1px	−1.1px
+Body	Inter 400, 11px / 1.8	Inter 400, 10px / 1.9
+Button	Inter 500, 10px	Inter 500, 9px
+Heading top margin: 12px desktop, 17px small mobile
+Body margin: 8px 0 17px
+Desktop CTA padding: 7px 11px
+Desktop CTA minimum height: 32px
+Small mobile
+Minimum banner height: 231px
+Copy padding: 25px 21px
+Paragraph maximum width: 235px
+Illustration becomes decorative:
+Absolute position
+Width: 160px
+Right: -55px
+Bottom: -7px
+Opacity: 0.3
+Illustration workflow label is hidden
+The illustration does not compete with the mobile text.
+
+12. Metric cards
+Desktop
+Four equal columns
+Gap: 16px
+Padding: 18px 19px 17px
+Border: 1px solid #E7EAE4
+Radius: 6px
+White background
+Typography
+Label: Inter 400, 11px
+Value: Plus Jakarta Sans 700, 27px
+Value line height: 1.2
+Value tracking: −1px
+Supporting text: Inter 400, 10px / 1.6
+Value margin: 14px 0 9px
+Label/icon row gap: 9px
+Icon size in the dashboard: 18px
+At-risk variant
+Background: #FFFDF8
+Border: #F1E2CC
+Main number: #B74C16
+Icon: impact orange
+Mobile
+Two equal columns
+Gap: 11px
+Padding: 16px 13px
+Label: 8px
+Value: 25px
+Supporting text: 7px / 1.8
+Icon width: 15px
+13. Panels and section headers
+Standard panel
+.panel {
+  background: #fff;
+  border: 1px solid #e7eae4;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 23px;
+}
+Desktop panel header
+Padding: 20px 21px 16px
+Horizontal layout
+Space between title group and action
+Gap: 15px
+Heading: Plus Jakarta Sans 14px / 700
+Heading tracking: -0.3px
+Supporting paragraph top margin: 5px
+Small mobile panel header
+Padding: 17px 16px
+Gap: 10px
+Align to top
+Heading: 13px
+Supporting paragraph: 8px / 1.7
+Contextual header link: 8px, with wrapping permitted
+Contextual link icon: 12px
+Panels are separated primarily by spacing and borders, not heavy drop shadows.
+
+14. Inventory table and mobile cards
+Desktop table
+Width: 100%
+Border collapse: collapse
+Text alignment: left
+Table content normally uses white-space: nowrap
+Header
+Padding: 12px 20px
+Background: #F9FAF6
+Top/bottom border: 1px solid #E7EAE4
+Inter 10px / 500
+Body cells
+Padding: 13px 20px
+Inter 12px
+Bottom border: 1px solid #EFF0EC
+Product cell
+Image: 37 × 37px
+Image radius: 5px
+Image/text gap: 11px
+Name/metadata gap: 6px
+Name: Inter 12px / 550
+Metadata: Inter 9px
+Batch ID within metadata: IBM Plex Mono 7px
+Quantities
+IBM Plex Mono
+Size: 12px
+Weight: 500
+Colour: #47583F
+Expiry
+Date: Inter 11px
+Supporting line: Inter 9px
+Vertical gap: 5px
+Urgent text: #B74C16
+Tablet conversion: 900px and below
+The table becomes a two-column grid of batch cards:
+
+Table header hidden
+tbody becomes a two-column grid
+Each record becomes its own internal two-column grid
+Card padding: 18px
+Card internal gap: 12px
+Product identity spans both columns
+“Available” and “Printed expiry” labels are added above the data
+Action arrow sits at the lower-right
+Small mobile: 480px and below
+The batch cards become one column.
+
+Each card:
+
+[42px product image] Product name
+                     Category · Batch ID
+
+Available                 Printed expiry
+Quantity + unit           Date
+                          Days remaining
+
+Status badge                         Action
+Exact rules:
+
+Card padding: 19px 17px
+Internal gap: 15px
+Product image: 42 × 42px
+Product name: 12px / 550
+Product metadata: 9px
+Quantity: IBM Plex Mono 16px / 500
+Expiry date: 11px
+Status badge: 9px
+Status occupies its own third grid row
+Action arrow: right 12px, bottom 16px
+Do not place the status badge over the expiry supporting text.
+
+15. Charts
+Container
+Desktop:
+
+Height: 195px
+Padding: 20px 24px 20px 21px
+Axis/plot gap: 13px
+Mobile:
+
+Height: 200px
+Left/right padding: 16px
+Typography
+Chart element	Font	Size
+Legend	Inter	9px desktop, 7px small mobile
+Y-axis labels	IBM Plex Mono	8px
+X-axis labels	IBM Plex Mono	9px
+Tooltip	Inter	8px
+Sample-data note	Inter	7px; hidden on small mobile
+Visual geometry
+Legend marker: 6 × 6px, radius 1px
+Y-axis width: 16px
+Bar pair gap: 5px
+Bar width: 39% of its pair
+Maximum bar width: 20px
+Minimum bar width: 8px
+Bar top radius: 3px
+Healthy bar: #31634B
+At-risk bar: #E4B590
+Grid line: 1px dashed #EAECE5
+Tooltip padding: 8px 10px
+Tooltip radius: 4px
+16. Buttons, fields, tabs and badges
+Standard button
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  min-height: 38px;
+  padding: 9px 14px;
+
+  border: 1px solid transparent;
+  border-radius: 4px;
+
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+Primary
+Background/border: forest green
+Text: white
+Hover background: #14543F
+Shadow: 0 1px 2px #102A1810
+Secondary
+Background: white
+Border: #DCE1D9
+Text: forest green
+Hover background: #F2F6EF
+Text link
+Inter 11px / 600
+Padding: 4px 0
+Minimum height: 26px
+Gap: 7px
+Underline on hover
+Underline offset: 4px
+Disabled
+Opacity: 0.45
+No shadow
+Inputs
+Desktop:
+
+Height: 42px
+Padding: 10px 12px
+Font: Inter 12px
+Border: 1px solid #DCE1D9
+Radius: 4px
+Placeholder: #626E5C
+At 900px and below:
+
+Height: 45px
+Font size: 13px
+Field labels
+Inter 12px / 550
+Label/control gap: 8px
+Helper text: 11px / 400
+Helper line height: 1.5
+Small-mobile modal label: 11px
+Form arrangement
+Vertical form stack gap: 20px
+Two-column form grid gap: 18px
+Small-mobile form grid gap: 18px 13px
+The implemented two-column form grid remains two columns for paired short fields, such as quantity/unit.
+
+Tabs
+Horizontal gap: 22px
+Bottom border: 1px solid #E7EAE4
+Bottom margin: 22px
+Tab font: Inter 11px / 500
+Active weight: 600
+Tab padding: 12px 3px
+Minimum height: 44px
+Active underline: 2px
+Horizontal overflow is allowed on narrow screens
+Badges
+Inter 10px / 500
+Line height: 1.4
+Padding: 5px 7px
+Radius: 3px
+Dot: 4 × 4px
+Dot/text gap: 5px
+State	Text	Background
+Green	#24764C	#ECF5EE
+Orange	#B74C16	#FFF4E9
+Red	#A72D2D	#FFF0EE
+Neutral	#626E5C	#F0F2ED
+17. Marketplace layout and typography
+Desktop arrangement
+Page title / action
+
+Introductory marketplace strip
+
+Search | Category | Location | Minimum quantity
+
+Result count / supporting note
+
+Listing card | Listing card | Listing card
+Filters
+.market-filters {
+  display: grid;
+  grid-template-columns:
+    minmax(200px, 2fr)
+    1fr
+    1fr
+    120px;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+Listing grid
+Three columns on primary desktop
+Two columns at 1000px and below
+One column at 480px and below
+Gap: 22px desktop
+Gap: 21px small mobile
+Listing-card measurements
+Property	Desktop	Small mobile
+Radius	6px	6px
+Image height	174px	195px
+Body padding	20px	20px
+Category eyebrow	7px	8px
+Product heading	17px	19px
+Price	22px	25px
+Detail labels	8px	8px
+Detail values	10px	11px
+CTA text	11px	11px
+CTA minimum height	Standard 38px	43px
+Product heading
+Plus Jakarta Sans
+Weight: 700
+Tracking: -0.5px
+Margin: 8px 0
+Price
+Plus Jakarta Sans—not IBM Plex Mono
+Weight: 750
+Tracking: -0.7px
+Price/unit gap: 5px
+Price block margin: 20px 0 17px
+Category eyebrow
+Inter 650
+Tracking: 1px
+Location
+Inter 9px
+Icon/text gap: 5px
+Icon size: 13px
+Listing detail row
+Top border
+Top padding: 14px
+Bottom margin: 19px
+Label/value vertical gap: 6px
+Mobile filters
+Search occupies a full row
+Category and location share the next row
+Minimum quantity occupies a full row on small mobile
+Gap: 9px
+Small-mobile select text: 10px
+18. Offers, transactions and recovery
+Offer rows
+Desktop grid:
+
+grid-template-columns: 1.5fr 1.1fr 0.7fr 0.5fr 16px;
+gap: 20px;
+padding: 23px;
+Typography:
+
+Business name: Inter 11px / 550
+Business metadata: Inter 9px
+Offer total: IBM Plex Mono 13px / 500
+Tablet/mobile:
+
+Two-column record arrangement
+Product spans the full first row
+Business details occupy the lower-left
+Status occupies the lower-right
+Padding: 20px
+Gap: 14px
+Transaction rows
+Desktop:
+
+Flex row
+Gap: 17px
+Padding: 22px
+Main text: Inter 12px / 550
+Metadata: Inter 10px
+Internal text gap: 7px
+Tablet/mobile:
+
+grid-template-columns: 40px 1fr auto;
+gap: 12px;
+Main text becomes 11px.
+
+Recovery opportunities
+Two-column card grid on desktop
+Gap: 22px
+One column at 1000px and below
+Detail grids
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 21px 25px;
+  margin: 25px 0;
+}
+Label: Inter 10px
+Value: Inter 12px / 550
+Value line height: 1.6
+Label/value gap: 8px
+Tablet/mobile:
+
+Gap: 22px 16px
+Small mobile:
+
+Value font: 11px
+Timeline
+Entry gap between marker and copy: 12px
+Entry bottom padding: 22px
+Marker: 18 × 18px
+Connecting rule: 1px
+Entry title: Inter 11px / 550
+Entry metadata: Inter 9px
+Metadata top margin: 6px
+Small mobile:
+
+Entry title: 10px
+Metadata: 8px
+19. Modal layout
+.modal {
+  width: min(640px, calc(100% - 32px));
+  max-height: 90dvh;
+  margin: auto;
+
+  padding: 0 28px 28px;
+  border-radius: 8px;
+
+  background: #fff;
+  overflow: auto;
+
+  box-shadow: 0 30px 100px #132a293b;
+}
+Backdrop:
+
+background: #142b236b;
+backdrop-filter: blur(3px);
+Modal header
+Sticky inside the modal
+White background
+Padding: 22px 0 18px
+Bottom margin: 7px
+Bottom border
+Heading: Plus Jakarta Sans 19px / 700
+Modal actions
+Flex row, aligned right
+Gap: 10px
+Top margin: 26px
+Top padding: 19px
+Top border
+Button text: 11px
+Mobile
+Modal padding: 0 20px 23px
+Header padding: 20px 0 16px
+Actions can wrap
+Action buttons use flex: 1
+Modal button minimum height: 42px
+Product-detail image: 80 × 90px
+Product-detail title: 18px
+Desktop product-detail title is 21px, with a 100 × 105px image.
+
+20. Profile and settings
+Desktop layout
+.profile-layout {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 25px;
+}
+At 1000px and below: one column.
+
+Business profile
+Cover height: 110px
+Content padding: 22px 26px 27px
+Business avatar: 68 × 68px
+Avatar border: 5px solid white
+Avatar radius: 7px
+Avatar overlaps the cover using margin-top: -60px
+Profile title: Plus Jakarta Sans 23px / 700
+Small mobile:
+
+Content padding: 20px
+Profile title: 21px
+Settings rows
+Text: Inter 11px
+Padding: 20px 22px
+Bottom divider
+Switch: 30 × 17px
+Switch knob: 11 × 11px
+Account/support rows:
+
+Inter 11px / 500
+Padding: 17px 22px
+Full-width row
+Chevron aligned right
+21. Public website typography
+The public website uses a more expressive scale than the dashboard.
+
+Do not apply public hero sizes to workspace screens.
+
+Element	Font / weight	Desktop	Tablet 768px	Mobile 375/390px
+Hero headline	Plus Jakarta Sans 800	59px	52px	43px
+Hero paragraph	Inter 400	14px	13px	13px
+Hero eyebrow	Inter 650	8px	7px	7px
+Main section heading	Plus Jakarta Sans 700	34px	30px	27px
+Three-column section heading	Plus Jakarta Sans 700	20px	21px	21px
+Three-column section body	Inter 400	12px	13px	13px
+Trust-section heading	Plus Jakarta Sans 700	38px	31px	31px
+Trust-section body	Inter 400	13px	13px	13px
+FAQ heading	Plus Jakarta Sans 700	34px	30px	30px
+FAQ question	Inter 550	13px	13px	13px
+FAQ answer	Inter 400	12px	12px	12px
+Closing CTA heading	Plus Jakarta Sans 700	40px	31px	31px
+Hero tracking and line height
+Desktop:
+
+font-size: 59px;
+font-weight: 800;
+line-height: 1.12;
+letter-spacing: -3px;
+Tablet:
+
+font-size: 52px;
+letter-spacing: -2.5px;
+Small mobile:
+
+font-size: 43px;
+letter-spacing: -2px;
+Hero paragraph:
+
+Line height: 1.9
+Maximum width: 440px
+Bottom margin: 27px
+Main section headings:
+
+Tracking: -1.5px
+Desktop margin: 15px 0 40px
+Three-column headings:
+
+Tracking: -0.65px
+Bottom margin: 13px
+22. Public website layout
+Desktop navigation
+Maximum width: 1300px
+Centred
+Padding: 25px 50px
+Navigation link gap: 27px
+Link text: Inter 11px
+Desktop hero
+.public-hero {
+  max-width: 1300px;
+  margin: auto;
+
+  display: grid;
+  grid-template-columns: 1.07fr 1fr;
+  gap: 65px;
+
+  padding: 65px 50px 85px;
+  align-items: center;
+}
+Hero photograph:
+
+Height: 490px
+Radius: 120px 6px 6px 6px
+object-fit: cover
+Bottom overlay for text readability
+Public content sections
+Maximum width: 1300px
+Padding: 75px 50px
+Three-column content gap: 50px
+Individual items use a top divider, not a card around everything
+Item top padding: 30px
+Trust section
+Maximum width: 1200px
+Padding: 90px 100px
+Horizontal icon/content layout
+Gap: 60px
+FAQ
+grid-template-columns: 1fr 1.4fr;
+gap: 60px;
+Each FAQ item:
+
+Padding: 20px 0
+Bottom border
+Answer top margin: 18px
+At 900px and below
+Hero becomes one column
+Hero padding: 40px 25px 50px
+Hero gap: 35px
+Photograph height: 350px
+Photograph radius: 70px 6px 6px
+Public sections: 55px 25px
+Three-column sections become one column
+Item gap: 30px
+FAQ becomes one column
+Desktop navigation links are hidden
+At 480px and below
+Public navigation padding: 20px 18px
+Hero headline: 43px
+Navigation wordmark: 18px
+Navigation CTA text: 9px
+Main public section headings: 27px
+23. Authentication layout and typography
+Desktop structure
+.auth-layout {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 44% 56%;
+}
+Left story panel
+Forest-green background
+Padding: 45px 50px
+Full viewport minimum height
+Vertically distributed logo, brand story, and footnote
+Right form area
+Padding: 90px 50px 50px
+Centred form
+Form maximum width: 390px
+Typography
+Element	Font	Weight	Desktop	Mobile
+Left-panel story heading	Plus Jakarta Sans	700	45px	Hidden
+Left-panel story paragraph	Inter	400	13px	Hidden
+Left-panel eyebrow	IBM Plex Mono	650 requested in CSS	10px	Hidden
+Form page title	Plus Jakarta Sans	700	28px	27px
+Form introduction	Inter	400	12px	12px
+Role-selection button	Inter	500	12px	12px
+Helper/prototype footnote	Inter	400	9px	9px
+Account-switch text	Inter	400	11px	11px
+The left eyebrow inherits a 650 weight request, but IBM Plex Mono is loaded at 400 and 500; its rendered available weight follows browser font matching. For literal replication, preserve the original loading and CSS rather than inventing another face.
+
+Story heading
+Line height: 1.22
+Margin: 25px 0
+Story paragraph
+Line height: 1.9
+Form title
+Margin: 20px 0 12px
+Form introduction
+Bottom margin: 30px
+Role choices
+Full-width buttons
+Minimum height: 47px
+Vertical gap: 9px
+Selected background: #EFF5E8
+Selected border: #7C9C6A
+Mobile authentication
+At 900px and below:
+
+One-column layout
+Left story panel becomes a compact brand header
+Hide the story heading, paragraph, and footnote
+Header background: #F1F5E9
+Form area padding: 85px 25px 40px
+Align form to the top
+Keep form maximum width at 390px
+Form title: 27px
+At 480px and below:
+
+Brand-header padding: 20px 25px
+24. Spacing, shape and visual restraint
+There is no single rigid spacing multiplier applied to every element. The actual interface relies on these recurring values:
+
+Use	Typical implemented spacing
+Icon/text gaps	5–12px
+Label/control gap	8px
+Form stack gap	20px
+Form grid gap	18px
+Panel separation	23–24px
+Dashboard column gap	22px
+Desktop content horizontal padding	34px
+Small-mobile content horizontal padding	17px
+Public desktop horizontal padding	50px
+Public mobile horizontal padding	25px
+Radius system
+--radius: 6px;
+--button-radius: 4px;
+--badge-radius: 3px;
+Additional actual values:
+
+Dashboard banner: 7px
+Modal: 8px
+Navigation item: 5px
+Product thumbnail: 5px
+Small icon container: 5px
+Avoid replacing these with 16–24px rounded cards. That would noticeably change the product.
+
+25. Icons and interaction polish
+Icon library
+Lucide React
+
+Typical sizes:
+
+Sidebar navigation: 19px
+Standard actions: 16–17px
+Notifications: 19px
+Hamburger: 22px
+Modal close: 20px
+Contextual arrows: 14–16px
+Product location: 13px
+Do not replace these with filled Material-style icons or emojis.
+
+Motion
+Standard button transitions: 0.16s
+Listing hover: 0.2s
+Listing hover lift: translateY(-3px)
+Navigation drawer: 0.2s
+Notification-switch transition: 0.2s
+Reduced-motion rule:
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+Keyboard focus
+:focus-visible {
+  outline: 3px solid #47936c;
+  outline-offset: 3px;
+}
+26. Why another implementation may look different
+Ask the other AI to check these before redesigning anything:
+
+Wrong font actually rendering
+The stylesheet may name Plus Jakarta Sans while the browser is displaying a fallback.
+
+Only loading regular and bold weights
+This changes the appearance of 550, 650, and 750.
+
+Missing negative tracking
+The headings use tight spacing. Normal letter spacing will look noticeably different.
+
+Oversized dashboard typography
+This dashboard does not use 20px panel headings and 16px table text.
+
+Using IBM Plex Mono for all numbers
+Large metric values and marketplace prices use Plus Jakarta Sans. Mono is selective.
+
+Using one font everywhere
+The distinction between heading, interface, and technical text is intentional.
+
+Incorrect content width
+A 238px sidebar and 34px desktop gutters are part of the composition.
+
+Equal-width dashboard panels
+The chart and attention panel are asymmetric: 1.7fr versus 1fr.
+
+Excessive card rounding or shadows
+Most surfaces use a 6px radius and a subtle border.
+
+Shrinking desktop tables on mobile
+Inventory becomes structured cards with separate quantity, expiry, and status areas.
+
+Applying mobile overrides in the wrong order
+The media queries accumulate. A 390px screen receives the 1200px, 1000px, 900px, and 480px overrides.
+
