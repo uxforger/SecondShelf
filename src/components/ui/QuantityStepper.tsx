@@ -91,7 +91,7 @@ export function QuantityStepper({ label, value, onChange, min = 1, max = 9999, u
               const n = parseInt(e.target.value.replace(/\D/g, ''), 10);
               onChange(Number.isFinite(n) ? clamp(n) : min);
             }}
-            className="num w-16 bg-transparent text-center text-[22px] font-semibold leading-7 text-deep outline-none"
+            className="num w-16 bg-transparent text-center text-[1.375rem] font-semibold leading-7 text-deep outline-none"
           />
           {unit && <span className="t-label text-muted">{unit}</span>}
         </div>

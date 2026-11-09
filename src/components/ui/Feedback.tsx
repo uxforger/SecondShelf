@@ -19,8 +19,7 @@ export function Toasts({ aboveTabBar }: { aboveTabBar: boolean }) {
     >
       <AnimatePresence initial={false}>
         {toasts.map((t) => (
-          <motion.button
-            type="button"
+          <motion.div
             key={t.id}
             layout
             initial={{ opacity: 0, y: 16, scale: 0.96 }}
@@ -28,7 +27,7 @@ export function Toasts({ aboveTabBar }: { aboveTabBar: boolean }) {
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
             transition={spring}
             onClick={() => dismissToast(t.id)}
-            className="pointer-events-auto flex max-w-[420px] items-center gap-2.5 rounded-full bg-deep py-2.5 pr-5 pl-3 text-left text-[15px] font-medium leading-5 text-white shadow-sheet"
+            className={`pointer-events-auto flex max-w-[420px] cursor-default items-center gap-2.5 rounded-full bg-deep py-2.5 pl-3 text-left text-[0.9375rem] font-medium leading-5 text-white shadow-sheet ${t.action ? 'pr-2' : 'pr-5'}`}
           >
             <span
               aria-hidden="true"
@@ -37,7 +36,20 @@ export function Toasts({ aboveTabBar }: { aboveTabBar: boolean }) {
               {t.tone === 'error' ? <AlertCircle className="size-4" /> : <Check className="size-4" />}
             </span>
             {t.text}
-          </motion.button>
+            {t.action && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  dismissToast(t.id);
+                  t.action!.run();
+                }}
+                className="ml-1 h-9 rounded-full bg-white/12 px-4 font-semibold text-amber hover:bg-white/20"
+              >
+                {t.action.label}
+              </button>
+            )}
+          </motion.div>
         ))}
       </AnimatePresence>
     </div>
@@ -106,7 +118,7 @@ export function ProgressSteps({ steps, current, failed }: { steps: Step[]; curre
                   )}
                 </AnimatePresence>
               </span>
-              <span className={`text-[16px] leading-6 ${state === 'waiting' ? 'text-muted' : 'font-medium text-deep'}`}>{s.label}</span>
+              <span className={`text-[1rem] leading-6 ${state === 'waiting' ? 'text-muted' : 'font-medium text-deep'}`}>{s.label}</span>
             </motion.li>
           );
         })}
@@ -140,7 +152,7 @@ export function SuccessMark({ size = 96 }: { size?: number }) {
     <motion.div
       initial={{ scale: 0.6, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: 'spring', visualDuration: 0.45, bounce: 0.3 }}
+      transition={{ type: 'spring', visualDuration: 0.4, bounce: 0 }}
       style={{ width: size, height: size }}
       className="flex items-center justify-center rounded-full bg-green text-white shadow-card"
     >

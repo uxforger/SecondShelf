@@ -11,7 +11,7 @@ export function LogoMark({ className = 'h-8 w-7' }: { className?: string }) {
 }
 
 export function Logo({ tone = 'dark', size = 'md', className = '' }: { tone?: 'dark' | 'light'; size?: 'sm' | 'md'; className?: string }) {
-  const text = size === 'sm' ? 'text-[19px]' : 'text-[22px]';
+  const text = size === 'sm' ? 'text-[1.1875rem]' : 'text-[1.375rem]';
   const mark = size === 'sm' ? 'h-7 w-6' : 'h-8 w-7';
   return (
     <span className={`inline-flex items-center gap-2 select-none ${className}`} aria-label="SecondShelf" role="img">

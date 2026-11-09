@@ -37,14 +37,38 @@ Everything runs in **demo mode** (`VITE_DEMO_MODE`, default `true`). There was n
 | Sign-in | adapter `signIn` | Accepts any phone/email and a password of 6+ characters. The form is prefilled per role so nobody types on stage. |
 | Barcode lookup | `src/lib/mock/catalogue.ts` | Five products, `200…` barcodes. Unknown codes open "New product". |
 | Access Bank payment | adapter `placeOrder` | Sandbox simulation: "Connecting" (≈0.75 s) → "Authorising" (≈0.8 s) → "Confirmed". Cancel is allowed until authorising starts. Receipt says "Sandbox payment". |
+| Undo a listing | adapter `unlistBatch` | Offered from the "Listed" toast for 5 s. |
 | Passport sharing | adapter `sharePassport` | Records consent and time; nothing leaves the app. |
 | Seed data | `src/lib/mock/seed.ts` | Built relative to today, so badges are always right. Ade Foods (Mushin), Mama Tolu Canteen (Yaba), Lagos Food Bank Initiative (partner example), 90 days of history. |
 
 To connect a real backend, write an adapter implementing `SecondShelfApi` and return it from `src/lib/api/index.ts` when `VITE_DEMO_MODE=false`. No screen changes needed.
 
+## Apple-design skill: how each rule is applied
+
+The skill file arrived after the first pass. It's saved locally at `.claude/skills/apple-design/SKILL.md` and deliberately not committed, because it contains words the no-AI-terms rule bans. The code was then checked against it section by section:
+
+| Skill section | Where it lives |
+| --- | --- |
+| §1 Respond on pointer-down | Every button and row scales on press (`whileTap`), no 300 ms delay. |
+| §2 1:1 tracking | Sheet drag keeps the grab offset; pointer capture; velocity read from the live value. |
+| §3 Interruptible | Springs start from the on-screen value. A sheet that is closing can be grabbed and pulled back. Outgoing pages, sheets and the payment screen stop taking input the moment they start leaving, so the next tap always lands. |
+| §4 Springs | Critically damped (`bounce 0`) by default. The bouncier sheet spring is used only after a drag or flick. The success check and scanner brackets no longer bounce. |
+| §5 Velocity handoff | Release velocity goes straight into the sheet and pull-to-refresh springs. |
+| §6 Momentum projection | Apple's `project()` (deceleration 0.998) decides whether a flick dismisses the sheet. |
+| §7 Same path in and out | Sheets up/down, desktop panel right, pages forward/back mirrored, payment screen in and out the same side. |
+| §9 Rubber-banding | Skill formula, at the top of the sheet and in pull to refresh. |
+| §10 Tap and drag details | Tabs, sidebar and the segmented control highlight on press and commit on release, so you can drag away to cancel. Pull to refresh needs ~10 px of clearly vertical travel first. |
+| §11 Compositor only | Row highlights fade an overlay instead of animating `background-color`. Height animations removed (the expired-date message is now the field's one-line error; the "waiting" line reserves its space). The sheet carries `will-change: transform`. |
+| §12 Materials | Translucent top bar and tab bar. Hairlines appear only where content actually runs under them (scroll edge), not as permanent dividers. Desktop panel fades as it travels. |
+| §13 Haptics | One tick, on the same frame as the visual, for scan, payment and handover only. |
+| §14 Reduced motion, transparency, contrast | Sheets cross-fade with no travel, page slides become fades, looping hints stop. Solid bars under reduced transparency; stronger borders under more contrast. |
+| §15 Typography | Size-specific tracking and leading. The type scale is now in `rem`, so it follows the phone's text-size setting. |
+| §16 Agency | "Listed" toast has **Undo** (`unlistBatch`). Confirmation only for reset and donate. |
+
+The skill also recommends the system font; the brief requires Poppins, so Poppins stays. The brief's sheet spring (bounce 0.15, 0.4 s) is kept rather than the skill's 0.8/0.3, since the brief set it explicitly.
+
 ## Decisions where the brief was open
 
-- **The apple-design skill file** (`.claude/skills/apple-design/SKILL.md`) isn't in the repo. I followed the rules written in the brief.
 - **Distributor home:** phones open on Stock; laptops open on Overview. Mobile has no Overview tab (the brief fixes four tabs), so the Passport tab also shows the Money and Carbon cards on phones.
 - **Images:** the repo has no product photos. Product cards use crops of the existing warehouse and provisions photos (object-position plus a CSS scale; no filters, no recolouring). Login uses `secondshelf_market_woman` (person, real goods, centred subject).
 - **Logo:** the shelfmark SVG is unchanged, including its original colours. The wordmark is now set in Poppins.

@@ -13,7 +13,7 @@ import { shortDate, weight } from '../../lib/format';
 import { spring } from '../../lib/motion';
 import { business, donations, type BatchView } from '../../lib/selectors';
 import { highlight, toast, useDb, useHighlight } from '../../lib/store';
-import { Thumb } from '../distributor/parts';
+import { Highlight, Thumb } from '../distributor/parts';
 
 export function Pickups(_: { session: Session }) {
   const db = useDb();
@@ -48,12 +48,12 @@ export function Pickups(_: { session: Session }) {
           type="button"
           whileTap={{ scale: 0.985 }}
           onClick={() => setOpenId(v.batch.id)}
-          animate={{ backgroundColor: lit === v.batch.id ? 'rgba(227,237,224,1)' : 'rgba(227,237,224,0)' }}
-          className="flex min-h-[72px] w-full items-center gap-3 rounded-[16px] px-3 py-3 text-left"
+          className="relative isolate flex min-h-[72px] w-full items-center gap-3 rounded-[16px] px-3 py-3 text-left"
         >
+          <Highlight on={lit === v.batch.id} />
           <Thumb image={v.product.image} focus={v.product.focus} zoom={v.product.zoom} />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[16px] font-medium leading-6 text-deep">{v.product.name}</p>
+            <p className="truncate text-[1rem] font-medium leading-6 text-deep">{v.product.name}</p>
             <p className="t-caption num truncate text-muted">
               {d.qty} cartons · {seller?.name}, {seller?.area}
             </p>

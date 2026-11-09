@@ -74,7 +74,7 @@ export function ProductDetail({ id }: { id: string; session: Session }) {
           </div>
 
           <div className="mt-4 flex items-baseline gap-3">
-            <span className="num text-[32px] font-semibold leading-[38px] tracking-[-0.01em] text-deep">{naira(listing.unitPrice)}</span>
+            <span className="num text-[2rem] font-semibold leading-[2.375rem] tracking-[-0.01em] text-deep">{naira(listing.unitPrice)}</span>
             <span className="num t-body text-muted">
               <span className="sr-only">was </span>
               <s>{naira(p.price)}</s>
@@ -95,7 +95,7 @@ export function ProductDetail({ id }: { id: string; session: Session }) {
 
           <div className="mt-5 hidden items-center justify-between lg:flex">
             <span className="t-label text-muted">Total</span>
-            <CountUp from="value" value={subtotal} format={naira} className="text-[24px] font-semibold text-deep" />
+            <CountUp from="value" value={subtotal} format={naira} className="text-[1.5rem] font-semibold text-deep" />
           </div>
           <Button size="lg" block className="mt-4 max-lg:hidden" disabled={soldOut} onClick={() => setCheckout(true)}>
             Buy
@@ -108,7 +108,7 @@ export function ProductDetail({ id }: { id: string; session: Session }) {
         <div className={`${contentWidth} flex h-20 items-center gap-4`}>
           <div className="min-w-0 flex-1">
             <p className="t-caption text-muted">Total</p>
-            <CountUp from="value" value={subtotal} format={naira} className="text-[22px] font-semibold leading-7 text-deep" />
+            <CountUp from="value" value={subtotal} format={naira} className="text-[1.375rem] font-semibold leading-7 text-deep" />
           </div>
           <Button size="lg" className="w-40" disabled={soldOut} onClick={() => setCheckout(true)}>
             Buy
@@ -137,12 +137,12 @@ export function ProductDetail({ id }: { id: string; session: Session }) {
         <dl className="divide-y divide-hairline">
           <div className="flex min-h-14 items-center justify-between gap-4 py-2">
             <dt className="min-w-0">
-              <p className="truncate text-[16px] font-medium text-deep">{p.name}</p>
+              <p className="truncate text-[1rem] font-medium text-deep">{p.name}</p>
               <p className="t-caption num text-muted">
                 {q} × {naira(listing.unitPrice)}
               </p>
             </dt>
-            <dd className="num text-[16px] font-medium text-deep">{naira(subtotal)}</dd>
+            <dd className="num text-[1rem] font-medium text-deep">{naira(subtotal)}</dd>
           </div>
           <div className="py-4">
             <dt className="sr-only">Fulfilment</dt>
@@ -161,7 +161,7 @@ export function ProductDetail({ id }: { id: string; session: Session }) {
           <div className="flex min-h-14 items-center justify-between py-2">
             <dt className="t-heading text-deep">Total</dt>
             <dd>
-              <CountUp from="value" value={total} format={naira} className="text-[24px] font-semibold text-deep" />
+              <CountUp from="value" value={total} format={naira} className="text-[1.5rem] font-semibold text-deep" />
             </dd>
           </div>
         </dl>

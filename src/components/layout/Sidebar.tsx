@@ -28,9 +28,8 @@ export function Sidebar({ session, path }: { session: Session; path: string }) {
                 <button
                   type="button"
                   aria-current={on ? 'page' : undefined}
-                  onPointerDown={(e) => e.button === 0 && navigate(item.path, { tab: true })}
-                  onClick={(e) => e.detail === 0 && navigate(item.path, { tab: true })}
-                  className={`relative flex h-11 w-full items-center gap-3 rounded-[12px] px-3 text-[15px] leading-5 transition-colors duration-150 ${
+                  onClick={() => navigate(item.path, { tab: true })}
+                  className={`relative flex h-11 w-full items-center gap-3 rounded-[12px] px-3 text-[0.9375rem] leading-5 transition-colors duration-150 ${
                     on ? 'font-semibold text-deep' : 'font-medium text-muted hover:bg-deep/[0.04] hover:text-deep'
                   }`}
                 >
@@ -45,11 +44,11 @@ export function Sidebar({ session, path }: { session: Session; path: string }) {
       </nav>
       <div className="m-3 flex items-center gap-3 rounded-[16px] p-2 pl-3 hover:bg-deep/[0.04]">
         <button type="button" onClick={() => navigate('/profile', { tab: true })} className="flex min-w-0 flex-1 items-center gap-3 text-left">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-deep text-[14px] font-semibold text-white">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-deep text-[0.875rem] font-semibold text-white">
             {session.name.charAt(0)}
           </span>
           <span className="min-w-0">
-            <span className="block truncate text-[14px] font-semibold leading-5 text-deep">{session.name}</span>
+            <span className="block truncate text-[0.875rem] font-semibold leading-5 text-deep">{session.name}</span>
             <span className="t-caption block text-muted">Profile</span>
           </span>
         </button>

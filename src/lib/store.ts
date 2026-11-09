@@ -80,15 +80,16 @@ export interface Toast {
   id: number;
   text: string;
   tone: 'neutral' | 'success' | 'error';
+  action?: { label: string; run: () => void };
 }
 
 const toastStore = createStore<Toast[]>([]);
 let toastId = 0;
 
-export function toast(text: string, tone: Toast['tone'] = 'neutral') {
-  const t = { id: ++toastId, text, tone };
+export function toast(text: string, tone: Toast['tone'] = 'neutral', action?: Toast['action']) {
+  const t = { id: ++toastId, text, tone, action };
   toastStore.set([...toastStore.get().slice(-2), t]);
-  setTimeout(() => dismissToast(t.id), tone === 'error' ? 4200 : 2800);
+  setTimeout(() => dismissToast(t.id), action ? 5000 : tone === 'error' ? 4200 : 2800);
 }
 
 export function dismissToast(id: number) {

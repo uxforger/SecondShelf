@@ -51,13 +51,13 @@ export function Orders({ session, openId }: { session: Session; openId?: string 
         >
           {p && <Thumb image={p.image} focus={p.focus} zoom={p.zoom} />}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[16px] font-medium leading-6 text-deep">{p?.name}</p>
+            <p className="truncate text-[1rem] font-medium leading-6 text-deep">{p?.name}</p>
             <p className="t-caption num truncate text-muted">
               {o.qty} cartons · {o.ref}
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
-            <span className="num text-[15px] font-semibold text-deep">{naira(o.total)}</span>
+            <span className="num text-[0.9375rem] font-semibold text-deep">{naira(o.total)}</span>
             {o.status === 'paid' ? <Badge tone="warning">Paid</Badge> : <Badge tone="success">Handed over</Badge>}
           </div>
         </motion.button>
@@ -117,7 +117,7 @@ function OrderSheet({ order, onClose }: { order: Order | null; onClose: () => vo
               <div className="rounded-[28px] bg-surface p-4 shadow-card ring-1 ring-hairline">
                 <QrCode value={o.ref} size={220} label={`Handover code ${o.ref}`} />
               </div>
-              <p className="num mt-4 text-[22px] font-semibold tracking-[0.04em] text-deep">{o.ref}</p>
+              <p className="num mt-4 text-[1.375rem] font-semibold tracking-[0.04em] text-deep">{o.ref}</p>
               <p className="t-label mt-1 text-muted">
                 Show at {o.fulfilment} · {seller?.name}, {seller?.area}
               </p>

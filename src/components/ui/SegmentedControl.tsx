@@ -54,7 +54,6 @@ export function SegmentedControl<T extends string>({ label, options, value, onCh
             role="radio"
             aria-checked={active}
             tabIndex={active ? 0 : -1}
-            onPointerDown={() => onChange(o.value)}
             onClick={() => onChange(o.value)}
             className={`relative z-10 h-10 rounded-full px-2 t-label transition-colors duration-200 ${active ? 'text-deep' : 'text-muted hover:text-deep'}`}
           >

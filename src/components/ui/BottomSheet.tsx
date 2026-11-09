@@ -1,8 +1,8 @@
 import { X } from 'lucide-react';
-import { animate, AnimatePresence, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react';
-import { useEffect, useId, useLayoutEffect, useRef, type ReactNode } from 'react';
+import { animate, AnimatePresence, motion, useIsPresent, useMotionValue, useReducedMotion, useTransform } from 'motion/react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { project, rubberBand, sheetSpring, spring } from '../../lib/motion';
+import { exitSpring, project, rubberBand, sheetSpring, spring } from '../../lib/motion';
 import { useDesktop } from '../../lib/useMedia';
 import { IconButton } from './Button';
 
@@ -94,6 +94,7 @@ function Header({ title, titleId, onClose, locked }: { title?: ReactNode; titleI
 }
 
 function Backdrop({ onClose, locked }: { onClose: () => void; locked?: boolean }) {
+  const present = useIsPresent();
   return (
     <motion.div
       aria-hidden="true"
@@ -102,7 +103,7 @@ function Backdrop({ onClose, locked }: { onClose: () => void; locked?: boolean }
       exit={{ opacity: 0 }}
       transition={spring}
       onClick={() => !locked && onClose()}
-      className="fixed inset-0 z-50 bg-deep/30"
+      className={`fixed inset-0 z-50 bg-deep/30 ${present ? '' : 'pointer-events-none'}`}
     />
   );
 }
@@ -111,38 +112,82 @@ function MobileSheet({ onClose, title, label, children, footer, locked }: SheetP
   const titleId = useId();
   const ref = useDialog(onClose, locked);
   const reduced = useReducedMotion();
+  // While leaving, the sheet must never swallow taps meant for the page.
+  const present = useIsPresent();
   const offscreen = typeof window !== 'undefined' ? window.innerHeight : 900;
 
   // y is ours: the drag writes to it, springs read from it, so every
   // animation starts from where the sheet actually is.
-  const y = useMotionValue(offscreen);
-  const backdrop = useTransform(y, [0, offscreen], [1, 0]);
+  // Reduced motion: no travel, a short cross-fade instead.
+  const y = useMotionValue(reduced ? 0 : offscreen);
+  const fade = useMotionValue(reduced ? 0 : 1);
+  const travel = useTransform(y, [0, offscreen], [1, 0]);
+  const backdrop = useTransform([travel, fade], ([t, f]: number[]) => t * f);
   const drag = useRef<{ start: number; from: number; id: number } | null>(null);
+  // Each dismissal gets a token; grabbing the sheet mid-close cancels it.
+  const closeToken = useRef(0);
   const closing = useRef(false);
+  // Mirrors `closing` for rendering: the scrim lets taps through while the sheet leaves.
+  const [leaving, setLeaving] = useState(false);
+  const stopWatch = useRef<(() => void) | null>(null);
+  useEffect(() => () => stopWatch.current?.(), []);
 
   useLayoutEffect(() => {
-    const c = animate(y, 0, reduced ? { duration: 0 } : spring);
+    const c = reduced ? animate(fade, 1, { duration: 0.2 }) : animate(y, 0, spring);
     return () => c.stop();
-  }, [y, reduced]);
+  }, [y, fade, reduced]);
 
   const height = () => ref.current?.offsetHeight ?? 500;
 
   const dismiss = (velocity = 0) => {
     if (closing.current) return;
     closing.current = true;
-    animate(y, height() + 40, reduced ? { duration: 0 } : { ...sheetSpring, velocity }).then(onClose);
+    setLeaving(true);
+    const token = ++closeToken.current;
+    let fired = false;
+    const done = () => {
+      if (fired || token !== closeToken.current || !closing.current) return;
+      fired = true;
+      stopWatch.current?.();
+      onClose();
+    };
+    if (reduced) {
+      animate(fade, 0, { duration: 0.18 }).then(done);
+      return;
+    }
+    // Hand over as soon as the sheet is off screen; don't wait for the
+    // spring's tail to settle (that would leave an invisible sheet in place).
+    const h = height();
+    stopWatch.current?.();
+    stopWatch.current = y.on('change', (v) => v >= h && done());
+    animate(y, h + 40, { ...sheetSpring, velocity }).then(done);
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (locked || e.button !== 0) return;
-    y.stop(); // interrupt any running spring: start from the current value
+    // Let buttons in the header (Close, Back) receive their own click.
+    if ((e.target as HTMLElement).closest('button')) return;
+    // Interrupt any running spring, including a dismissal, and start
+    // from where the sheet is right now.
+    y.stop();
+    stopWatch.current?.();
+    stopWatch.current = null;
+    closeToken.current++;
+    closing.current = false;
+    setLeaving(false);
     drag.current = { start: e.clientY, from: y.get(), id: e.pointerId };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    try {
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      /* pointer already gone */
+    }
   };
   const onPointerMove = (e: React.PointerEvent) => {
     const d = drag.current;
     if (!d || d.id !== e.pointerId) return;
     const raw = d.from + (e.clientY - d.start);
+    // Under reduced motion the sheet still follows the finger (that's
+    // direct manipulation, not decoration), it just doesn't animate by itself.
     y.set(raw < 0 ? rubberBand(raw, height()) : raw);
   };
   const onPointerUp = (e: React.PointerEvent) => {
@@ -151,13 +196,19 @@ function MobileSheet({ onClose, title, label, children, footer, locked }: SheetP
     drag.current = null;
     const velocity = y.getVelocity();
     const projected = y.get() + project(velocity);
-    if (projected > height() * 0.5) dismiss(velocity);
-    else animate(y, 0, reduced ? { duration: 0 } : { ...sheetSpring, velocity });
+    if (projected > height() * 0.5) {
+      dismiss(velocity);
+    } else animate(y, 0, reduced ? { duration: 0.15 } : { ...sheetSpring, velocity });
   };
 
   return (
     <>
-      <motion.div aria-hidden="true" style={{ opacity: backdrop }} onClick={() => !locked && dismiss()} className="fixed inset-0 z-50 bg-deep/30" />
+      <motion.div
+        aria-hidden="true"
+        style={{ opacity: backdrop }}
+        onClick={() => !locked && dismiss()}
+        className={`fixed inset-0 z-50 bg-deep/30 ${present && !leaving ? '' : 'pointer-events-none'}`}
+      />
       <motion.div
         ref={ref}
         role="dialog"
@@ -165,9 +216,9 @@ function MobileSheet({ onClose, title, label, children, footer, locked }: SheetP
         aria-labelledby={title ? titleId : undefined}
         aria-label={title ? undefined : label}
         tabIndex={-1}
-        style={{ y }}
-        exit={{ y: offscreen, transition: reduced ? { duration: 0 } : spring }}
-        className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92dvh] w-full max-w-[720px] flex-col rounded-t-[28px] bg-offwhite shadow-sheet outline-none"
+        style={{ y, opacity: fade, willChange: 'transform' }}
+        exit={reduced ? { opacity: 0, transition: { duration: 0.18 } } : { y: offscreen, transition: exitSpring }}
+        className={`fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[92dvh] w-full max-w-[720px] flex-col rounded-t-[28px] bg-offwhite shadow-sheet outline-none ${present ? '' : 'pointer-events-none'}`}
       >
         <div
           onPointerDown={onPointerDown}
@@ -192,6 +243,7 @@ function MobileSheet({ onClose, title, label, children, footer, locked }: SheetP
 function SidePanel({ onClose, title, label, children, footer, locked }: SheetProps) {
   const titleId = useId();
   const ref = useDialog(onClose, locked);
+  const present = useIsPresent();
   return (
     <>
       <Backdrop onClose={onClose} locked={locked} />
@@ -202,11 +254,11 @@ function SidePanel({ onClose, title, label, children, footer, locked }: SheetPro
         aria-labelledby={title ? titleId : undefined}
         aria-label={title ? undefined : label}
         tabIndex={-1}
-        initial={{ x: '100%' }}
-        animate={{ x: 0 }}
-        exit={{ x: '100%' }}
+        initial={{ x: '100%', opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: '100%', opacity: 0, transition: { x: exitSpring, opacity: { duration: 0.25 } } }}
         transition={spring}
-        className="fixed inset-y-0 right-0 z-50 flex w-[440px] max-w-full flex-col bg-offwhite shadow-sheet outline-none"
+        className={`fixed inset-y-0 right-0 z-50 flex w-[440px] max-w-full flex-col bg-offwhite shadow-sheet outline-none ${present ? '' : 'pointer-events-none'}`}
       >
         <div className="shrink-0 pt-4">
           <Header title={title} titleId={titleId} onClose={onClose} locked={locked} />

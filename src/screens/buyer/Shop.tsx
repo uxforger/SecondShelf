@@ -102,9 +102,9 @@ function OfferCard({ v, distance }: { v: BatchView; distance: number }) {
           <span className="num t-caption absolute top-3 left-3 rounded-full bg-amber px-2.5 py-1 font-semibold text-deep">{listing.discountPct}% off</span>
         </motion.div>
         <div className="p-4">
-          <p className="truncate text-[17px] font-semibold leading-6 text-deep">{p.name}</p>
+          <p className="truncate text-[1.0625rem] font-semibold leading-6 text-deep">{p.name}</p>
           <p className="mt-1 flex items-baseline gap-2">
-            <span className="num text-[20px] font-semibold leading-7 text-deep">{naira(listing.unitPrice)}</span>
+            <span className="num text-[1.25rem] font-semibold leading-7 text-deep">{naira(listing.unitPrice)}</span>
             <span className="num t-label text-muted">
               <span className="sr-only">was </span>
               <s>{naira(p.price)}</s>

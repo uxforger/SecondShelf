@@ -82,7 +82,7 @@ export function Handover() {
             <motion.div key="d" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={spring} className="flex flex-col items-center py-6 text-center">
               <SuccessMark size={88} />
               <p className="t-title mt-5 text-deep">Handed over</p>
-              <p className="num mt-1 text-[28px] font-semibold leading-9 text-deep">{naira(done.total)}</p>
+              <p className="num mt-1 text-[1.75rem] font-semibold leading-9 text-deep">{naira(done.total)}</p>
               <p className="t-label num mt-1 text-muted">
                 {business(db, done.buyerId)?.name} · {product(db, done.productId)?.name} · {done.qty}
               </p>

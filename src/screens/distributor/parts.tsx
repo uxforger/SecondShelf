@@ -18,6 +18,19 @@ export function Thumb({ image, focus, zoom, className = 'size-12' }: { image: Im
   );
 }
 
+/** Mint flash for a row that just changed. Opacity only. */
+export function Highlight({ on }: { on: boolean }) {
+  return (
+    <motion.span
+      aria-hidden="true"
+      initial={false}
+      animate={{ opacity: on ? 1 : 0 }}
+      transition={{ duration: on ? 0.2 : 1.2 }}
+      className="pointer-events-none absolute inset-0 -z-10 rounded-[16px] bg-mint"
+    />
+  );
+}
+
 /** A stock row. Moves between sections with a shared layout animation. */
 export function BatchRow({ v, onOpen, highlighted }: { v: BatchView; onOpen: () => void; highlighted: boolean }) {
   const { batch: b, product: p } = v;
@@ -39,16 +52,15 @@ export function BatchRow({ v, onOpen, highlighted }: { v: BatchView; onOpen: () 
         type="button"
         whileTap={{ scale: 0.985 }}
         onClick={onOpen}
-        animate={{ backgroundColor: highlighted ? 'rgba(227,237,224,1)' : 'rgba(227,237,224,0)' }}
-        transition={{ backgroundColor: { duration: highlighted ? 0.2 : 1.2 } }}
-        className="flex min-h-[72px] w-full items-center gap-3 rounded-[16px] px-3 py-3 text-left"
+        className="relative isolate flex min-h-[72px] w-full items-center gap-3 rounded-[16px] px-3 py-3 text-left"
       >
-        <Thumb image={p.image} focus={p.focus} zoom={p.zoom} />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-[16px] font-medium leading-6 text-deep">{p.name}</div>
+        <Highlight on={highlighted} />
+        <span className="relative"><Thumb image={p.image} focus={p.focus} zoom={p.zoom} /></span>
+        <div className="relative min-w-0 flex-1">
+          <div className="truncate text-[1rem] font-medium leading-6 text-deep">{p.name}</div>
           <div className="t-caption num mt-0.5 truncate text-muted">{subtitle}</div>
         </div>
-        <ExpiryBadge days={v.days} />
+        <span className="relative"><ExpiryBadge days={v.days} /></span>
       </motion.button>
     </motion.li>
   );
@@ -58,7 +70,7 @@ export function StatBlock({ label, children, note }: { label: string; children: 
   return (
     <div className="min-w-0">
       <p className="t-label text-muted">{label}</p>
-      <p className="mt-1 text-[28px] font-semibold leading-[34px] tracking-[-0.01em] text-deep lg:text-[32px] lg:leading-[38px]">{children}</p>
+      <p className="mt-1 text-[1.75rem] font-semibold leading-[2.125rem] tracking-[-0.01em] text-deep lg:text-[2rem] lg:leading-[2.375rem]">{children}</p>
       {note && <div className="t-caption mt-1 text-muted">{note}</div>}
     </div>
   );
@@ -136,11 +148,11 @@ export function ActivityFeed({ items, limit = 8 }: { items: Activity[]; limit?: 
           >
             <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-mint text-deep">{ACTIVITY_ICON[a.kind]}</span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[15px] font-medium leading-5 text-deep">{a.title}</p>
+              <p className="truncate text-[0.9375rem] font-medium leading-5 text-deep">{a.title}</p>
               {a.detail && <p className="t-caption num truncate text-muted">{a.detail}</p>}
             </div>
             <div className="shrink-0 text-right">
-              {a.amount !== undefined && <p className="num text-[15px] font-semibold leading-5 text-deep">{nairaShort(a.amount)}</p>}
+              {a.amount !== undefined && <p className="num text-[0.9375rem] font-semibold leading-5 text-deep">{nairaShort(a.amount)}</p>}
               <p className="t-caption text-muted">{ago(a.at)}</p>
             </div>
           </motion.li>

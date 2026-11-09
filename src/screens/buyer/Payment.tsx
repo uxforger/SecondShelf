@@ -1,5 +1,5 @@
 import { AlertCircle, X } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion, useIsPresent } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button, IconButton } from '../../components/ui/Button';
@@ -8,7 +8,7 @@ import { QrCode } from '../../components/ui/QrCode';
 import { api, ApiError, type Order, type OrderInput, type PayStage } from '../../lib/api';
 import { naira } from '../../lib/format';
 import { haptic } from '../../lib/haptics';
-import { spring } from '../../lib/motion';
+import { exitSpring, spring } from '../../lib/motion';
 import { navigate } from '../../lib/router';
 
 const STEPS = [{ label: 'Connecting to Access Bank' }, { label: 'Authorising payment' }, { label: 'Confirmed' }];
@@ -54,6 +54,7 @@ function PaymentScreen({ input, total, onClose }: { input: OrderInput; total: nu
   };
 
   const canCancel = state.s === 'paying' && state.step === 0;
+  const present = useIsPresent();
 
   return (
     <motion.div
@@ -62,9 +63,9 @@ function PaymentScreen({ input, total, onClose }: { input: OrderInput; total: nu
       aria-label="Payment"
       initial={{ opacity: 0, x: 24 }}
       animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 24 }}
+      exit={{ opacity: 0, x: 24, transition: { x: exitSpring, opacity: { duration: 0.2 } } }}
       transition={spring}
-      className="fixed inset-0 z-[55] overflow-y-auto bg-offwhite"
+      className={`fixed inset-0 z-[55] overflow-y-auto bg-offwhite ${present ? '' : 'pointer-events-none'}`}
     >
       <div className="mx-auto flex min-h-dvh w-full max-w-[440px] flex-col px-5 pt-[max(12px,var(--safe-top))] pb-[max(20px,var(--safe-bottom))]">
         <div className="flex h-14 items-center justify-end">
@@ -79,7 +80,7 @@ function PaymentScreen({ input, total, onClose }: { input: OrderInput; total: nu
           {state.s === 'paying' && (
             <motion.div key="paying" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, y: -12 }} transition={spring} className="flex flex-1 flex-col justify-center pb-16">
               <p className="t-label text-muted">Paying</p>
-              <p className="num mt-1 text-[40px] font-semibold leading-[44px] tracking-[-0.02em] text-deep">{naira(total)}</p>
+              <p className="num mt-1 text-[2.5rem] font-semibold leading-[2.75rem] tracking-[-0.02em] text-deep">{naira(total)}</p>
               <div className="mt-8">
                 <ProgressSteps steps={STEPS} current={state.step} />
               </div>
@@ -95,7 +96,7 @@ function PaymentScreen({ input, total, onClose }: { input: OrderInput; total: nu
             <motion.div key="paid" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="flex flex-1 flex-col items-center text-center">
               <SuccessMark size={88} />
               <h1 className="t-title mt-5 text-deep">Paid!</h1>
-              <p className="num mt-1 text-[32px] font-semibold leading-[38px] text-deep">{naira(state.order.total)}</p>
+              <p className="num mt-1 text-[2rem] font-semibold leading-[2.375rem] text-deep">{naira(state.order.total)}</p>
               <p className="num t-label mt-1 text-muted">Ref {state.order.ref}</p>
               <motion.div
                 initial={{ opacity: 0, scale: 0.94 }}

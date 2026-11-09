@@ -1,4 +1,3 @@
-import { Ban } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useRef, useState, type FormEvent } from 'react';
 import { Scanner } from '../../components/scanner/Scanner';
@@ -138,7 +137,7 @@ function AddForm({ code, product, onSaved }: { code: string; product: Product | 
         <div className="flex items-center gap-3 rounded-[20px] bg-surface p-3 shadow-soft ring-1 ring-hairline">
           <Thumb image={product.image} focus={product.focus} zoom={product.zoom} className="size-16" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[17px] font-semibold leading-6 text-deep">{product.name}</p>
+            <p className="truncate text-[1.0625rem] font-semibold leading-6 text-deep">{product.name}</p>
             <p className="t-caption num text-muted">
               {product.pack} · {product.netKg} kg · {naira(product.price)}
             </p>
@@ -176,26 +175,9 @@ function AddForm({ code, product, onSaved }: { code: string; product: Product | 
           min={addDays(today(), 1)}
           onChange={(e) => setExpiry(e.target.value)}
           onBlur={blur('expiry')}
-          error={touched.expiry && !expired ? errors.expiry : null}
+          error={expired ? "Expired items can't be added." : touched.expiry ? errors.expiry : null}
           hint={left !== null && left > 0 ? `${shortDate(expiry)} · ${left} days left` : undefined}
         />
-        <AnimatePresence initial={false}>
-          {expired && (
-            <motion.p
-              role="alert"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={spring}
-              className="-mt-3 mb-3 overflow-hidden"
-            >
-              <span className="mt-3 flex items-center gap-2 rounded-[12px] bg-danger-tint px-4 py-3 t-label text-danger">
-                <Ban className="size-5 shrink-0" />
-                Expired items can't be added.
-              </span>
-            </motion.p>
-          )}
-        </AnimatePresence>
         <Input label="Batch number" autoCapitalize="characters" autoComplete="off" placeholder="CC-2410" value={batchNo} onChange={(e) => setBatchNo(e.target.value)} />
         <QuantityStepper label="Quantity" value={qty} onChange={setQty} unit="cartons" />
       </div>

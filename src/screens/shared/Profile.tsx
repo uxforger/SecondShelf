@@ -28,9 +28,9 @@ export function Profile({ session }: { session: Session }) {
   return (
     <Page title="Profile" back={session.role === 'distributor' ? '/stock' : undefined}>
       <Card className="flex items-center gap-4 p-5">
-        <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-deep text-[22px] font-semibold text-white">{session.name.charAt(0)}</span>
+        <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-deep text-[1.375rem] font-semibold text-white">{session.name.charAt(0)}</span>
         <div className="min-w-0">
-          <p className="truncate text-[20px] font-semibold leading-7 text-deep">{session.name}</p>
+          <p className="truncate text-[1.25rem] font-semibold leading-7 text-deep">{session.name}</p>
           <p className="t-label text-muted">
             {ROLE_LABEL[session.role]} · {biz?.area}
           </p>

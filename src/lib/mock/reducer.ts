@@ -11,6 +11,7 @@ import { FOOD_BANK } from './catalogue.ts';
 export type Action =
   | { type: 'batch/add'; at: string; today: string; batch: Batch; product?: Product }
   | { type: 'batch/list'; at: string; today: string; batchId: string; discountPct: number }
+  | { type: 'batch/unlist'; at: string; batchId: string }
   | { type: 'batch/donate'; at: string; today: string; batchId: string }
   | { type: 'donation/collect'; at: string; batchId: string }
   | { type: 'order/place'; at: string; today: string; order: Order }
@@ -87,6 +88,23 @@ export function reduce(db: Db, action: Action): Db {
           kind: 'listed',
           title: `Listed ${p.name}`,
           detail: `${pct}% off · ${b.quantity} cartons`,
+          businessIds: [b.sellerId],
+        }),
+      };
+    }
+
+    case 'batch/unlist': {
+      const b = findBatch(db, action.batchId);
+      const p = productOf(db, b);
+      if (!b.listing) return db;
+      return {
+        ...db,
+        version,
+        batches: replaceBatch(db, { ...b, listing: undefined }),
+        activity: withActivity(db, {
+          at: action.at,
+          kind: 'listed',
+          title: `Unlisted ${p.name}`,
           businessIds: [b.sellerId],
         }),
       };

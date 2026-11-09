@@ -39,20 +39,16 @@ export function Sales({ session }: { session: Session }) {
     <Page title="Sales">
       <Card dark className="overflow-hidden p-5 lg:p-6">
         <p className="t-label text-white/70">Recovered</p>
-        <CountUp value={m.moneyRecovered} format={naira} className="mt-1 block text-[34px] font-semibold leading-10 tracking-[-0.02em] lg:text-[40px] lg:leading-[44px]" />
-        <AnimatePresence initial={false}>
-          {m.moneyPending > 0 && (
-            <motion.p
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={spring}
-              className="num t-label overflow-hidden text-amber"
-            >
-              <span className="block pt-1">{naira(m.moneyPending)} waiting for handover</span>
-            </motion.p>
-          )}
-        </AnimatePresence>
+        <CountUp value={m.moneyRecovered} format={naira} className="mt-1 block text-[2.125rem] font-semibold leading-10 tracking-[-0.02em] lg:text-[2.5rem] lg:leading-[2.75rem]" />
+        <motion.p
+          initial={false}
+          animate={{ opacity: m.moneyPending > 0 ? 1 : 0, y: m.moneyPending > 0 ? 0 : -4 }}
+          transition={spring}
+          aria-hidden={m.moneyPending <= 0}
+          className="num t-label min-h-6 pt-1 text-amber"
+        >
+          {m.moneyPending > 0 ? `${naira(m.moneyPending)} waiting for handover` : ' '}
+        </motion.p>
       </Card>
 
       <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">
@@ -79,10 +75,10 @@ export function Sales({ session }: { session: Session }) {
                 <motion.li layout="position" key={v.batch.id} transition={spring} className="flex min-h-16 items-center gap-3 px-3 py-2">
                   <Thumb image={v.product.image} focus={v.product.focus} zoom={v.product.zoom} className="size-11" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-medium leading-5 text-deep">{v.product.name}</p>
+                    <p className="truncate text-[0.9375rem] font-medium leading-5 text-deep">{v.product.name}</p>
                     <p className="t-caption num text-muted">{v.batch.quantity} left</p>
                   </div>
-                  <span className="num text-[15px] font-semibold text-deep">{naira(v.batch.listing!.unitPrice)}</span>
+                  <span className="num text-[0.9375rem] font-semibold text-deep">{naira(v.batch.listing!.unitPrice)}</span>
                 </motion.li>
               ))}
             </ul>
@@ -106,12 +102,12 @@ export function Sales({ session }: { session: Session }) {
                     className="flex min-h-16 items-center gap-3 px-3 py-2"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[15px] font-medium leading-5 text-deep">{business(db, o.buyerId)?.name}</p>
+                      <p className="truncate text-[0.9375rem] font-medium leading-5 text-deep">{business(db, o.buyerId)?.name}</p>
                       <p className="t-caption num truncate text-muted">
                         {product(db, o.productId)?.name} · {o.qty} · {ago(o.handedOverAt ?? o.paidAt)}
                       </p>
                     </div>
-                    <span className="num text-[15px] font-semibold text-deep">{naira(o.total)}</span>
+                    <span className="num text-[0.9375rem] font-semibold text-deep">{naira(o.total)}</span>
                   </motion.li>
                 ))}
               </AnimatePresence>
@@ -136,12 +132,12 @@ function WaitingRow({ o }: { o: Order }) {
     >
       <Card className="flex items-center gap-3 p-3 pl-4">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[16px] font-semibold leading-6 text-deep">{business(db, o.buyerId)?.name}</p>
+          <p className="truncate text-[1rem] font-semibold leading-6 text-deep">{business(db, o.buyerId)?.name}</p>
           <p className="t-caption num truncate text-muted">
             {p?.name} · {o.qty} · {o.ref}
           </p>
           <div className="mt-1.5 flex items-center gap-2">
-            <span className="num text-[15px] font-semibold text-deep">{naira(o.total)}</span>
+            <span className="num text-[0.9375rem] font-semibold text-deep">{naira(o.total)}</span>
             <Badge tone="warning">Paid</Badge>
           </div>
         </div>

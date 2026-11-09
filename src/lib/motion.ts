@@ -6,6 +6,13 @@ export const spring: Transition = { type: 'spring', visualDuration: 0.35, bounce
 /** Sheets and drawers after a drag or flick: a little life, still calm. */
 export const sheetSpring: Transition = { type: 'spring', visualDuration: 0.4, bounce: 0.15 };
 
+/**
+ * For things leaving the screen: the same spring, but it ends once it is
+ * visually at rest (within 2px) instead of chasing a sub-pixel tail, so
+ * the layer is removed promptly. Use for transforms only, not opacity.
+ */
+export const exitSpring: Transition = { type: 'spring', visualDuration: 0.35, bounce: 0, restDelta: 2, restSpeed: 20 };
+
 /** Press feedback on pointer-down. */
 export const pressSpring: Transition = { type: 'spring', visualDuration: 0.1, bounce: 0 };
 

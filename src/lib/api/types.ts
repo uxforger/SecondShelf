@@ -152,6 +152,8 @@ export interface SecondShelfApi {
   lookupBarcode(code: string): Promise<Product | null>;
   addBatch(input: NewBatchInput): Promise<Batch>;
   listBatch(batchId: string, discountPct: number, onStage?: (s: ListStage) => void): Promise<Batch>;
+  /** Take a listing back down (undo). Paid orders are not affected. */
+  unlistBatch(batchId: string): Promise<Batch>;
   donateBatch(batchId: string): Promise<Batch>;
   collectDonation(batchId: string): Promise<Batch>;
   /** Can be cancelled until the bank starts authorising. */

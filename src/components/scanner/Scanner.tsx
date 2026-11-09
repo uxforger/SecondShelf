@@ -210,7 +210,7 @@ export function Scanner({ kind, title, paused, onDetect, onClose }: Props) {
                 key={c.key}
                 initial={false}
                 animate={{ x: c.x, y: c.y, borderColor: detected ? '#7fd68a' : '#ffffff' }}
-                transition={detected ? { type: 'spring', visualDuration: 0.3, bounce: 0.2 } : spring}
+                transition={detected ? { type: 'spring', visualDuration: 0.25, bounce: 0 } : spring}
                 className={`absolute top-0 left-0 ${c.cls}`}
                 style={{ width: CORNER, height: CORNER }}
               />
@@ -224,7 +224,7 @@ export function Scanner({ kind, title, paused, onDetect, onClose }: Props) {
         <IconButton label="Close" tone="dark" onClick={onClose}>
           <X className="size-5" />
         </IconButton>
-        <h1 className="flex-1 text-center text-[17px] font-semibold leading-6 !text-white">{title}</h1>
+        <h1 className="flex-1 text-center text-[1.0625rem] font-semibold leading-6 !text-white">{title}</h1>
         <span className="size-11" />
       </div>
 

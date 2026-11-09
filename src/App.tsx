@@ -1,5 +1,5 @@
-import { AnimatePresence, LayoutGroup, MotionConfig, motion } from 'motion/react';
-import { lazy, Suspense, useEffect, useLayoutEffect, type ReactNode } from 'react';
+import { AnimatePresence, LayoutGroup, MotionConfig, motion, useIsPresent } from 'motion/react';
+import { forwardRef, lazy, Suspense, useEffect, useLayoutEffect, type ReactNode } from 'react';
 import { homeFor } from './components/layout/nav';
 import { Sidebar } from './components/layout/Sidebar';
 import { TabBar } from './components/layout/TabBar';
@@ -89,6 +89,26 @@ function resolve(session: Session, path: string): Resolved | null {
   return null;
 }
 
+/** A page in the transition stack. The outgoing page stops taking input at once. */
+const PageFrame = forwardRef<HTMLDivElement, { dir: number; children: ReactNode }>(function PageFrame({ dir, children }, ref) {
+  const present = useIsPresent();
+  return (
+    <motion.div
+      ref={ref}
+      custom={dir}
+      variants={pageVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+      transition={spring}
+      className={`w-full ${present ? '' : 'pointer-events-none'}`}
+      aria-hidden={present ? undefined : true}
+    >
+      {children}
+    </motion.div>
+  );
+});
+
 function AppShell({ session }: { session: Session }) {
   const route = useRoute();
   const desktop = useDesktop();
@@ -110,18 +130,9 @@ function AppShell({ session }: { session: Session }) {
       <div className="relative lg:pl-[248px]">
         <LayoutGroup>
           <AnimatePresence mode="popLayout" initial={false} custom={route.dir}>
-            <motion.div
-              key={resolved.key}
-              custom={route.dir}
-              variants={pageVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={spring}
-              className="w-full"
-            >
+            <PageFrame key={resolved.key} dir={route.dir}>
               <Suspense fallback={<div className="min-h-dvh" />}>{resolved.el}</Suspense>
-            </motion.div>
+            </PageFrame>
           </AnimatePresence>
         </LayoutGroup>
       </div>

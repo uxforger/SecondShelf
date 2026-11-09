@@ -37,7 +37,7 @@ export function FieldMessage({ id, error, hint }: { id: string; error?: string |
 }
 
 export const inputClass =
-  'h-12 w-full rounded-[12px] bg-surface px-4 text-[16px] leading-6 text-deep ring-1 ring-hairline outline-none placeholder:text-muted/70 transition-shadow focus:ring-2 focus:ring-green aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-danger disabled:bg-sunken';
+  'h-12 w-full rounded-[12px] bg-surface px-4 text-[1rem] leading-6 text-deep ring-1 ring-hairline outline-none placeholder:text-muted/70 transition-shadow focus:ring-2 focus:ring-green aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-danger disabled:bg-sunken';
 
 export const Input = forwardRef<HTMLInputElement, FieldProps>(function Input(
   { label, error, hint, trailing, className = '', id, ...rest },

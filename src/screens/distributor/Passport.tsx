@@ -58,14 +58,14 @@ export function Passport({ session }: { session: Session }) {
                 <p className="t-label flex items-center gap-1.5 text-white/75">
                   <BadgeCheck className="size-4" /> Business Passport
                 </p>
-                <p className="mt-1 text-[20px] font-semibold leading-7">
+                <p className="mt-1 text-[1.25rem] font-semibold leading-7">
                   {biz?.name}, {biz?.area}
                 </p>
               </div>
               {db.passportSharedAt && <Badge tone="deep" className="bg-white/12 ring-1 ring-white/20">Shared {shortDate(db.passportSharedAt)}</Badge>}
             </div>
             <p className="t-label mt-6 text-white/75">Verified sales · 90 days</p>
-            <CountUp value={m.verifiedSales90} format={naira} className="mt-1 block text-[36px] font-semibold leading-[42px] tracking-[-0.02em] lg:text-[44px] lg:leading-[48px]" />
+            <CountUp value={m.verifiedSales90} format={naira} className="mt-1 block text-[2.25rem] font-semibold leading-[2.625rem] tracking-[-0.02em] lg:text-[2.75rem] lg:leading-[3rem]" />
             <Button variant="cta" className="mt-6" icon={<Landmark className="size-5" />} onClick={() => setConsent(true)}>
               {db.passportSharedAt ? 'Share again' : 'Share with bank'}
             </Button>
@@ -76,7 +76,7 @@ export function Passport({ session }: { session: Session }) {
               {rows.map(([label, value]) => (
                 <div key={label} className="flex min-h-14 items-center justify-between gap-4">
                   <dt className="t-label text-muted">{label}</dt>
-                  <dd className="num text-[17px] font-semibold text-deep">{value}</dd>
+                  <dd className="num text-[1.0625rem] font-semibold text-deep">{value}</dd>
                 </div>
               ))}
             </dl>

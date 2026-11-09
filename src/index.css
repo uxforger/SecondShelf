@@ -82,42 +82,42 @@
    Type scale (Poppins). Size-specific tracking and leading.
    ------------------------------------------------------------------ */
 @utility t-display {
-  font-size: 40px;
-  line-height: 44px;
+  font-size: 2.5rem;
+  line-height: 2.75rem;
   letter-spacing: -0.02em;
   font-weight: 700;
   @media (width >= 1024px) {
-    font-size: 56px;
-    line-height: 60px;
+    font-size: 3.5rem;
+    line-height: 3.75rem;
   }
 }
 @utility t-title {
-  font-size: 28px;
-  line-height: 34px;
+  font-size: 1.75rem;
+  line-height: 2.125rem;
   letter-spacing: -0.01em;
   font-weight: 600;
 }
 @utility t-heading {
-  font-size: 20px;
-  line-height: 28px;
+  font-size: 1.25rem;
+  line-height: 1.75rem;
   letter-spacing: -0.005em;
   font-weight: 600;
 }
 @utility t-body {
-  font-size: 16px;
-  line-height: 24px;
+  font-size: 1rem;
+  line-height: 1.5rem;
   letter-spacing: 0;
   font-weight: 400;
 }
 @utility t-label {
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
   letter-spacing: 0.01em;
   font-weight: 500;
 }
 @utility t-caption {
-  font-size: 12px;
-  line-height: 16px;
+  font-size: 0.75rem;
+  line-height: 1rem;
   letter-spacing: 0.02em;
   font-weight: 500;
 }
@@ -151,8 +151,8 @@
     background: var(--bg);
     color: var(--text-body);
     font-family: var(--font-sans);
-    font-size: 16px;
-    line-height: 24px;
+    font-size: 1rem;
+    line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;

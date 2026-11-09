@@ -4,6 +4,7 @@ import { rubberBand, sheetSpring, spring } from './motion';
 
 const TRIGGER = 72;
 const HOLD = 56;
+const SLOP = 10;
 
 /**
  * Pull down at the top of the page to refresh. The content follows the
@@ -20,23 +21,32 @@ export function usePullToRefresh(onRefresh: () => Promise<void>) {
 
   useEffect(() => {
     let startY: number | null = null;
+    let startX = 0;
     let pulling = false;
 
     const onStart = (e: TouchEvent) => {
       if (busy.current || window.scrollY > 0 || e.touches.length !== 1) return;
       startY = e.touches[0].clientY;
+      startX = e.touches[0].clientX;
       y.stop();
     };
     const onMove = (e: TouchEvent) => {
       if (startY === null) return;
       const dy = e.touches[0].clientY - startY;
-      if (dy > 0 && window.scrollY <= 0) {
+      const dx = e.touches[0].clientX - startX;
+      if (!pulling) {
+        // Hysteresis: commit only after ~10px of clearly vertical, downward travel.
+        if (Math.abs(dx) > SLOP && Math.abs(dx) > Math.abs(dy)) {
+          startY = null;
+          return;
+        }
+        if (dy < SLOP || window.scrollY > 0) return;
         pulling = true;
-        if (e.cancelable) e.preventDefault();
-        y.set(rubberBand(dy, window.innerHeight * 0.6));
-      } else if (pulling) {
-        y.set(0);
+        startY += SLOP; // track 1:1 from here, no jump
       }
+      const travel = e.touches[0].clientY - startY;
+      if (e.cancelable) e.preventDefault();
+      y.set(travel > 0 ? rubberBand(travel, window.innerHeight * 0.6) : 0);
     };
     const onEnd = async () => {
       if (startY === null) return;

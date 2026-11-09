@@ -218,6 +218,12 @@ export function createMockApi(): SecondShelfApi {
       return findBatch(batchId);
     },
 
+    async unlistBatch(batchId) {
+      await stage(300, 450);
+      await dispatch({ type: 'batch/unlist', at: new Date().toISOString(), batchId });
+      return findBatch(batchId);
+    },
+
     async donateBatch(batchId) {
       await stage(600, 800);
       await dispatch({ type: 'batch/donate', at: new Date().toISOString(), today: today(), batchId });

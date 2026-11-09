@@ -15,8 +15,8 @@ const VARIANTS: Record<Variant, string> = {
 
 const SIZES: Record<Size, string> = {
   sm: 'h-11 px-4 t-label rounded-full',
-  md: 'h-12 px-5 text-[16px] leading-6 font-semibold rounded-full',
-  lg: 'h-14 px-6 text-[17px] leading-6 font-semibold rounded-full',
+  md: 'h-12 px-5 text-[1rem] leading-6 font-semibold rounded-full',
+  lg: 'h-14 px-6 text-[1.0625rem] leading-6 font-semibold rounded-full',
 };
 
 export function Spinner({ className = 'size-5' }: { className?: string }) {

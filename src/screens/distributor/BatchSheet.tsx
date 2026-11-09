@@ -59,7 +59,18 @@ export function BatchSheet({ view, onClose }: { view: BatchView | null; onClose:
       await new Promise((r) => setTimeout(r, 650));
       onClose();
       highlight(b.id);
-      toast('Listed', 'success');
+      toast('Listed', 'success', {
+        label: 'Undo',
+        run: () => {
+          api
+            .unlistBatch(b.id)
+            .then(() => {
+              highlight(b.id);
+              toast('Unlisted');
+            })
+            .catch(() => toast('Could not undo.', 'error'));
+        },
+      });
     } catch (e) {
       toast(e instanceof ApiError ? e.message : 'Could not list.', 'error');
       setMode('list');
@@ -174,13 +185,13 @@ export function BatchSheet({ view, onClose }: { view: BatchView | null; onClose:
             <div className="rounded-[20px] bg-surface p-5 shadow-soft ring-1 ring-hairline">
               <p className="t-label text-muted">Price per carton</p>
               <div className="mt-1 flex items-center gap-3">
-                <span className="num text-[18px] leading-7 text-muted line-through decoration-1">{naira(p.price)}</span>
+                <span className="num text-[1.125rem] leading-7 text-muted line-through decoration-1">{naira(p.price)}</span>
                 <ArrowRight className="size-5 text-muted" aria-hidden="true" />
-                <CountUp from="value" value={price} format={naira} className="text-[32px] font-semibold leading-[38px] tracking-[-0.01em] text-deep" />
+                <CountUp from="value" value={price} format={naira} className="text-[2rem] font-semibold leading-[2.375rem] tracking-[-0.01em] text-deep" />
               </div>
               <label htmlFor="discount" className="mt-5 flex items-baseline justify-between">
                 <span className="t-label text-deep">Discount</span>
-                <span className="num text-[20px] font-semibold leading-7 text-deep">{discount}%</span>
+                <span className="num text-[1.25rem] font-semibold leading-7 text-deep">{discount}%</span>
               </label>
               <input
                 id="discount"
@@ -232,7 +243,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   return (
     <div className="flex min-h-12 items-center justify-between gap-4 py-2">
       <dt className="t-label text-muted">{label}</dt>
-      <dd className="text-right text-[15px] font-medium leading-6 text-deep">{children}</dd>
+      <dd className="text-right text-[0.9375rem] font-medium leading-6 text-deep">{children}</dd>
     </div>
   );
 }

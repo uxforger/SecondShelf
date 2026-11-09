@@ -140,7 +140,7 @@ export function Login() {
   const caption = (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <Logo tone="light" size="sm" />
-      <span className="text-[15px] font-medium leading-6 text-white/90">Sell it before it expires.</span>
+      <span className="text-[0.9375rem] font-medium leading-6 text-white/90">Sell it before it expires.</span>
     </div>
   );
 
