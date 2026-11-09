@@ -96,7 +96,7 @@ export function Pickups(_: { session: Session }) {
         footer={
           open?.batch.donation?.status === 'offered' ? (
             <Button size="lg" block loading={busy} loadingLabel="Saving" onClick={() => open && collect(open)}>
-              Collected
+              Confirm pickup
             </Button>
           ) : undefined
         }

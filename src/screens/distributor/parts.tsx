@@ -70,8 +70,8 @@ export function MoneyCard({ m }: { m: Metrics }) {
       <div className="flex items-center justify-between">
         <h2 className="t-heading text-deep">Money</h2>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-5 md:grid-cols-3">
-        <div className="col-span-2 md:col-span-1">
+      <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-5 2xl:grid-cols-3">
+        <div className="col-span-2 2xl:col-span-1">
           <StatBlock
             label="Recovered"
             note={m.moneyPending > 0 ? <span className="num">+{naira(m.moneyPending)} waiting</span> : undefined}

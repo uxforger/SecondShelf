@@ -41,7 +41,7 @@ export function Overview({ session }: { session: Session }) {
             <h2 className="t-heading text-deep">Business Passport</h2>
             {db.passportSharedAt ? <Badge tone="success">Shared</Badge> : <Badge>Ready</Badge>}
           </div>
-          <div className="mt-4 grid grid-cols-2 gap-4">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
             <StatBlock label="Verified sales · 90 days">
               <CountUp value={m.verifiedSales90} format={naira} />
             </StatBlock>

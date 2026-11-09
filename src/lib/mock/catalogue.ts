@@ -14,8 +14,8 @@ export const PRODUCTS: Product[] = [
     price: 2600,
     type: 'crackers',
     image: 'provisions',
-    focus: '14% 78%',
-    zoom: 1.9,
+    focus: '12% 80%',
+    zoom: 1.6,
   },
   {
     id: 'p-noodles',
@@ -27,7 +27,7 @@ export const PRODUCTS: Product[] = [
     type: 'noodles',
     image: 'inspection',
     focus: '4% 62%',
-    zoom: 2.1,
+    zoom: 1.7,
   },
   {
     id: 'p-milk',
@@ -38,8 +38,8 @@ export const PRODUCTS: Product[] = [
     price: 18500,
     type: 'milk',
     image: 'warehouse',
-    focus: '36% 52%',
-    zoom: 2.4,
+    focus: '36% 55%',
+    zoom: 1.9,
   },
   {
     id: 'p-digestive',
@@ -50,8 +50,8 @@ export const PRODUCTS: Product[] = [
     price: 7200,
     type: 'biscuits',
     image: 'inspection',
-    focus: '22% 92%',
-    zoom: 2.0,
+    focus: '18% 92%',
+    zoom: 1.6,
   },
   {
     id: 'p-drink',
@@ -62,8 +62,8 @@ export const PRODUCTS: Product[] = [
     price: 8400,
     type: 'drink',
     image: 'warehouse',
-    focus: '96% 88%',
-    zoom: 2.0,
+    focus: '100% 100%',
+    zoom: 1.6,
   },
 ];
 
