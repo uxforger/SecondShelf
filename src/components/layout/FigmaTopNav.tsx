@@ -24,6 +24,13 @@ export const FigmaTopNav: React.FC = () => {
     admin: 'Admin console',
   };
 
+  const roleMobileTitles = {
+    distributor: 'Distributor',
+    buyer: 'Buyer',
+    recovery_partner: 'Recovery',
+    admin: 'Admin',
+  };
+
   const roleUsers = {
     distributor: { name: 'Tunde Adeyemi', initials: 'TA', org: 'Adeyemi Foods & Distribution', hub: 'Mushin Wholesale Depot #04' },
     buyer: { name: 'Chef Chioma Okonkwo', initials: 'CO', org: 'Mainland Caterers', hub: 'Ikeja Commercial Kitchen #12' },
@@ -49,8 +56,9 @@ export const FigmaTopNav: React.FC = () => {
           <Menu className="w-[22px] h-[22px]" />
         </button>
 
-        <h1 className="text-[12px] max-lg:text-[11.5px] font-[600] text-[#0B3E2E] tracking-tight truncate whitespace-nowrap max-w-[210px] sm:max-w-none font-['Inter',sans-serif]">
-          {roleTitles[activeRole]}
+        <h1 className="text-[11px] sm:text-[12px] font-[600] text-[#0B3E2E] tracking-tight truncate whitespace-nowrap max-w-[140px] sm:max-w-none font-['Inter',sans-serif]">
+          <span className="sm:hidden">{roleMobileTitles[activeRole]}</span>
+          <span className="hidden sm:inline">{roleTitles[activeRole]}</span>
         </h1>
 
         {/* Vertical separator: 1 x 18px */}
