@@ -1,5 +1,5 @@
 import { AnimatePresence, LayoutGroup, MotionConfig, motion } from 'motion/react';
-import { useEffect, useLayoutEffect, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, type ReactNode } from 'react';
 import { homeFor } from './components/layout/nav';
 import { Sidebar } from './components/layout/Sidebar';
 import { TabBar } from './components/layout/TabBar';
@@ -10,17 +10,39 @@ import { match, navigate, useRoute } from './lib/router';
 import { useSession } from './lib/store';
 import { useDesktop } from './lib/useMedia';
 import { Login } from './screens/Login';
-import { Orders } from './screens/buyer/Orders';
-import { ProductDetail } from './screens/buyer/ProductDetail';
-import { Shop } from './screens/buyer/Shop';
-import { Handover } from './screens/distributor/Handover';
-import { Overview } from './screens/distributor/Overview';
-import { Passport } from './screens/distributor/Passport';
-import { Sales } from './screens/distributor/Sales';
-import { Scan } from './screens/distributor/Scan';
-import { Stock } from './screens/distributor/Stock';
-import { Pickups } from './screens/foodbank/Pickups';
-import { Profile } from './screens/shared/Profile';
+
+// Screens load per role, so sign-in ships only what it needs.
+// Chunks are prefetched while the sign-in screen is idle.
+const loadDistributor = () => import('./screens/distributor');
+const loadBuyer = () => import('./screens/buyer');
+const loadFoodBank = () => import('./screens/foodbank/Pickups');
+const loadShared = () => import('./screens/shared/Profile');
+const Overview = lazy(() => loadDistributor().then((m) => ({ default: m.Overview })));
+const Stock = lazy(() => loadDistributor().then((m) => ({ default: m.Stock })));
+const Scan = lazy(() => loadDistributor().then((m) => ({ default: m.Scan })));
+const Sales = lazy(() => loadDistributor().then((m) => ({ default: m.Sales })));
+const Handover = lazy(() => loadDistributor().then((m) => ({ default: m.Handover })));
+const Passport = lazy(() => loadDistributor().then((m) => ({ default: m.Passport })));
+const Shop = lazy(() => loadBuyer().then((m) => ({ default: m.Shop })));
+const ProductDetail = lazy(() => loadBuyer().then((m) => ({ default: m.ProductDetail })));
+const Orders = lazy(() => loadBuyer().then((m) => ({ default: m.Orders })));
+const Pickups = lazy(() => loadFoodBank().then((m) => ({ default: m.Pickups })));
+const Profile = lazy(() => loadShared().then((m) => ({ default: m.Profile })));
+
+/** Fetch the role screens on the first touch or after 4 s, whichever comes first. */
+export function prefetchScreens() {
+  let done = false;
+  const go = () => {
+    if (done) return;
+    done = true;
+    window.removeEventListener('pointerdown', go);
+    window.removeEventListener('keydown', go);
+    void Promise.all([loadDistributor(), loadBuyer(), loadFoodBank(), loadShared()]).catch(() => {});
+  };
+  window.addEventListener('pointerdown', go, { once: true, passive: true });
+  window.addEventListener('keydown', go, { once: true });
+  window.setTimeout(go, 4000);
+}
 
 interface Resolved {
   key: string;
@@ -98,7 +120,7 @@ function AppShell({ session }: { session: Session }) {
               transition={spring}
               className="w-full"
             >
-              {resolved.el}
+              <Suspense fallback={<div className="min-h-dvh" />}>{resolved.el}</Suspense>
             </motion.div>
           </AnimatePresence>
         </LayoutGroup>
@@ -111,6 +133,9 @@ function AppShell({ session }: { session: Session }) {
 
 export default function App() {
   const session = useSession();
+  useEffect(() => {
+    prefetchScreens();
+  }, []);
   return (
     <MotionConfig reducedMotion="user" transition={spring}>
       <AnimatePresence mode="wait" initial={false}>

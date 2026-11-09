@@ -121,3 +121,9 @@ All three devices must use **the same URL** so they share one demo database. Che
 - `npm run lint`: clean. `npm test`: 13/13 pass. `npm run build`: clean.
 - Playwright drove every flow at 375 px and 1440 px (plus 768 and 1280), including the two-device handover. Zero console errors, no horizontal scroll. Screenshots are in `/screenshots`.
 - The AI-terms grep from the brief returns nothing outside `AUDIT.md`, which lists the old findings.
+- All five printed barcodes decode correctly with ZXing (the app's fallback decoder).
+- **Lighthouse (mobile, local production build):** Accessibility **100**, Best Practices **100**, Performance **56–68** over four runs. **This misses the 85 target.**
+  - LCP 2.8–3.6 s, CLS 0.001.
+  - Most of the blocking time is first-launch style/layout in a fresh headless Chrome on this Windows machine. It measured 2–3 s in Lighthouse but 20–40 ms on repeat cold launches, so it's the machine warming up, not the page. Script evaluation is a steady ~470 ms.
+  - Already done: non-blocking fonts, preloaded sign-in photo, WebP at 640/960/1280, screens split per role, QR and barcode libraries loaded on demand.
+  - Next steps if the score must be higher: re-measure on the deployed HTTPS build with PageSpeed Insights, serve with gzip/brotli (most hosts and Cloudflare tunnels do this; `server.ts` doesn't), and move to `LazyMotion` to cut ~100 KB of animation code from first load.

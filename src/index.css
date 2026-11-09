@@ -76,8 +76,6 @@
   --shadow-card: var(--shadow-md);
   --shadow-sheet: var(--shadow-lg);
 
-  --breakpoint-md: 768px;
-  --breakpoint-lg: 1024px;
 }
 
 /* ------------------------------------------------------------------

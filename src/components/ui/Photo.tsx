@@ -27,7 +27,7 @@ export function Photo({ image, className = '', focus = '50% 50%', sizes = '(min-
     <picture className="contents">
       <source
         type="image/webp"
-        srcSet={`/images/opt/${p.file}-640.webp 640w, /images/opt/${p.file}-1280.webp 1280w`}
+        srcSet={`/images/opt/${p.file}-640.webp 640w, /images/opt/${p.file}-960.webp 960w, /images/opt/${p.file}-1280.webp 1280w`}
         sizes={sizes}
       />
       <img

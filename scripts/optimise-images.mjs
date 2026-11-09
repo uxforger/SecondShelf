@@ -13,7 +13,7 @@ const page = await browser.newPage();
 
 for (const f of fs.readdirSync(imgDir).filter((x) => x.endsWith('.jpg'))) {
   const b64 = fs.readFileSync(path.join(imgDir, f)).toString('base64');
-  for (const w of [640, 1280]) {
+  for (const w of [640, 960, 1280]) {
     const data = await page.evaluate(async ({ b64, w }) => {
       const img = new Image();
       img.src = `data:image/jpeg;base64,${b64}`;
