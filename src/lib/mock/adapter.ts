@@ -104,6 +104,7 @@ export function createMockApi(): SecondShelfApi {
 
   /** Bank-backed steps run on the server only. */
   async function post<T>(url: string, body?: unknown): Promise<T> {
+    await ready;
     if (mode !== 'live') throw new ApiError('Needs a connection to the SecondShelf server.');
     let res: Response;
     try {
@@ -117,11 +118,16 @@ export function createMockApi(): SecondShelfApi {
   }
 
   // Try the shared endpoint; fall back to this browser only.
+  // `ready` settles once the first attempt is done, so a page that loads
+  // straight into a server call (e.g. back from the bank) never races it.
+  let markReady: () => void = () => {};
+  const ready = new Promise<void>((r) => (markReady = r));
   void (async () => {
-    const remote = await fetchState(1500);
-    if (!remote) return;
+    const remote = await fetchState(4000);
+    if (!remote) return markReady();
     mode = 'live';
     set(remote);
+    markReady();
     setInterval(pull, POLL_MS);
     // Pushed updates: pull as soon as the server says something changed.
     if (typeof EventSource !== 'undefined') {
