@@ -91,8 +91,9 @@ kubectl rollout restart deployment/app # restart (e.g. after the team key is rot
 | `SETTLEMENT_ACCOUNT` | `0123456789` | Funds payouts (order payouts and carbon share). |
 | `LOAN_ACCOUNT` / `LOAN_BVN` | same as `DISTRIBUTOR_ACCOUNT` / `22200000002` | Stock-loan applicant (the bank needs a BVN). |
 | `CONSENT_PHONE` | unset | Overrides the holder phone from spec v2 test data (`+2348051234502` for `0123456790`). |
-| `CARBON_PROJECT_TYPE` | unset | Set to a sandbox type to use the real carbon registry; unset = simulated, labelled. |
-| `CARBON_PRICE_NGN` | `25000` | Credit value per tCO₂e when the registry doesn't price it. |
+| `CARBON_PROJECT_ID` | `prj_118` | The one registry pool project. Pinned so a pod with a fresh disk never registers another. |
+| `CARBON_MERCHANT_ID` | `mer_900` | Registry merchant that carbon credit buyers pay. |
+| `CARBON_PRICE_NGN` | `25000` | Price per credit (1 credit = 1 tCO₂e) charged to the buyer. |
 
 To flip to mock quickly: `kubectl set env deployment/app DEMO_MODE=true` (and back with `false`).
 

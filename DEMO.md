@@ -33,10 +33,11 @@ Open the same link on both phones and the laptop. Before the demo: Profile → *
 4. **Handover** (Phone 1): Sales → **Confirm** → scan Phone 2's QR (or Enter code `SS-…`) → "Handed over" → **Pay out** to BABATUNDE OLUMIDE ADEYEMI ···0790. *Phone 2* flips to Handed over.
 5. **Share Passport** (Phone 1, real bank): Passport → **Share with bank** → **Share** → code `123456` → **Authorise**. "Bank statement · Bank-verified" for ···0790. "Stop sharing" revokes it.
 6. **Stock loan** (Phone 1, real bank): Passport → **Get stock loan** → **Apply** → decision, credit score, rate, fee, schedule → **Accept** → "Funds sent" to ···0790.
-7. **Carbon** (Phone 1, labelled *Simulated registry*): Passport → **Open carbon**
-   - **Submit MRV**
-   - **Approve as verifier**
-   - **Retire** → certificate
-   - **Pay out** the share to ···0790
+7. **Carbon** (Phone 1, real sandbox registry): Passport → **Open carbon**
+   - **Submit MRV**: 2.23 t CO₂e sent as 4,214 kWh, with an **Evidence** link (batches, weights, dry shares, formula).
+   - Wait about a minute. The registry auto-verifies: "2 credits issued" plus the serial range.
+   - **Sell credits**: on the bank page **Pay with test card** (₦50,000 to the registry merchant). Back in the app: "Credits retired" and the certificate.
+   - "Registry pays the pool": ₦49,000 after the 2% fee, then "Paid to pool".
+   - **Pay out**: ₦29,400 (60%) to BABATUNDE OLUMIDE ADEYEMI ···0790. The dashboard reads "₦29,400 paid to Ade Foods".
 
-Real sandbox: payment, payout, Passport consent and statement, loan, carbon share transfer. Simulated and labelled: carbon registry records. The bank's hosted checkout page still names the sandbox merchant (see CHANGES.md).
+Everything above runs on the real sandbox: payment, payout, Passport consent and statement, loan, and the carbon registry. The carbon project shows as "Food waste reduction (VM0046)". The registry carries it as the solar-type pool "SecondShelf carbon pool (sandbox)", as the organisers instructed. The bank's hosted checkout page still names the sandbox merchant (see CHANGES.md).

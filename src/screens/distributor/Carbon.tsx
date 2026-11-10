@@ -155,7 +155,7 @@ export function Carbon({ paidRef }: { session: Session; paidRef?: string }) {
                 ) : current ? (
                   <div>
                     <p className="t-label num text-muted">
-                      {tonnes(current.tco2e, 2)} CO₂e · {current.handovers} handovers · {current.collections} pickups · {weight(current.foodKg)}
+                      {tonnes(current.tco2e, 2)} CO₂e · {current.handovers} {current.handovers === 1 ? 'handover' : 'handovers'} · {current.collections} {current.collections === 1 ? 'pickup' : 'pickups'} · {weight(current.foodKg)}
                     </p>
                     <p className="t-caption num mt-1 text-muted">
                       Sent as {current.kwh.toLocaleString('en-US')} kWh ·{' '}
