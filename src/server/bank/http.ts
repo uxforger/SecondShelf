@@ -37,7 +37,7 @@ async function call(method: 'GET' | 'POST', path: string, body?: Json, idempoten
     throw new BankError(504, 'TIMEOUT', 'No response from the bank.');
   }
   const json = (await res.json().catch(() => null)) as Json | null;
-  log(method, path, res.status, json?.request_id, json?.error?.code);
+  log(method, path, res.status, json?.request_id, json?.error?.code, json?.error?.field, json?.error?.message);
   if (!res.ok || json?.status === 'error') {
     throw new BankError(res.status, json?.error?.code ?? `HTTP_${res.status}`, json?.error?.message ?? res.statusText, json?.request_id);
   }
@@ -45,8 +45,10 @@ async function call(method: 'GET' | 'POST', path: string, body?: Json, idempoten
 }
 
 /** Logs the shape of each call, never headers, keys or bodies. */
-function log(method: string, path: string, status: number | string, requestId?: string, code?: string) {
-  console.log(`[bank] ${method} ${path.split('?')[0]} -> ${status}${code ? ` ${code}` : ''}${requestId ? ` (${requestId})` : ''}`);
+function log(method: string, path: string, status: number | string, requestId?: string, code?: string, field?: string, message?: string) {
+  // Validation details help fix field names; they never contain our key or request body.
+  const why = code ? ` ${code}${field ? ` field=${field}` : ''}${message ? ` "${String(message).slice(0, 160)}"` : ''}` : '';
+  console.log(`[bank] ${method} ${path.split('?')[0]} -> ${status}${why}${requestId ? ` (${requestId})` : ''}`);
 }
 
 const num = (v: unknown) => (v === undefined || v === null || v === '' ? undefined : Number(v));
