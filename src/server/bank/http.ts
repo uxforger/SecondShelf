@@ -316,7 +316,7 @@ export const httpBank: BankClient = {
     const d = await call(
       'POST',
       '/loans/applications',
-      { account_number: i.accountNumber, amount: Number(i.amount.toFixed(2)), tenor_days: i.tenorDays, purpose: i.purpose, product: 'inventory' },
+      { applicant_account: i.accountNumber, account_number: i.accountNumber, amount: Number(i.amount.toFixed(2)), tenor_days: i.tenorDays, purpose: i.purpose, product: 'inventory' },
       i.idempotencyKey,
     );
     shape('loan apply', d);
