@@ -47,6 +47,24 @@ Everything runs in **demo mode** (`VITE_DEMO_MODE`, default `true`). There was n
 
 To connect a real backend, write an adapter implementing `SecondShelfApi` and return it from `src/lib/api/index.ts` when `VITE_DEMO_MODE=false`. No screen changes needed.
 
+## Bank integration (Xtradot sandbox via Forge)
+
+One container: an Express server (`src/server/`) serves the built app, `/api/*` and `GET /healthz` on `0.0.0.0:8080`. All bank calls run on the server with `x-api-key` from `GATEWAY_KEY`; the browser never talks to the bank. Our SQLite file on `/data` is the source of truth (the sandbox resets). `DEMO_MODE=true` (or no key, e.g. on a laptop) swaps in `src/server/bank/mock.ts`, which has the same functions.
+
+| # | Flow | Status |
+| --- | --- | --- |
+| 1 | **Buyer payment**: `POST /payments/checkout` → hosted page → return to `/pay/return` → `GET /payments/{ref}/verify` before marking paid. Loader steps on both legs; amount checked against our record. | Built, tested in mock mode. Field names follow the guide; confirm on first sandbox run. |
+| 2 | **Webhooks** at `/api/hooks/forge`: HMAC `sha256({ts}.{body})` verified with a timing-safe compare, >5 min rejected, `event_id` de-duplicated in SQLite, payment/transfer events applied, devices updated by server-sent events. Registered once on startup (secret stored in SQLite, never logged). | Built; signature logic unit-tested. |
+| 3 | **Distributor payout** after handover: intra name enquiry → show "Mama Nkechi Provisions Ltd · 0123456793" → transfer. One payout per order, stored `Idempotency-Key`, on 504 requery `GET /transfers/{ref}` and never resend. Fees, VAT and stamp duty read from the response. | Built, tested in mock mode. |
+| 4 | **Share Passport**: open-banking consent → OTP (sandbox `123456`) → statement read → "Bank-verified" card on the Passport. | Built, tested in mock mode. |
+| 5 | Loan application from the Passport; carbon registry (project → MRV → retire → certificate). | **Not started.** Endpoints listed in the guide §5.3. |
+
+Rules enforced in code: `Idempotency-Key` on every money-moving or record-creating POST; never resend after 504; always verify payments; fees read from responses; a client-side limiter keeps us under 50 bank calls a minute; synthetic data only. Browsers can only send stock and handover actions; payments, payouts and bank data are server-only.
+
+Not verifiable from a laptop: the sandbox only answers inside the cluster, and the exact request fields come from a spec we don't have. The server logs every bank call as `[bank] METHOD /path -> status CODE (request_id)` (no keys, no bodies), so the first sandbox run shows any field mismatch.
+
+Distributor naming: the app's distributor is "Ade Foods"; the sandbox payout account's holder is "Mama Nkechi Provisions Ltd". Name enquiry shows the real holder name, as the bank requires.
+
 ## Apple-design skill: how each rule is applied
 
 The skill file arrived after the first pass. It's saved locally at `.claude/skills/apple-design/SKILL.md` and deliberately not committed, because it contains words the no-AI-terms rule bans. The code was then checked against it section by section:

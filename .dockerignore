@@ -1,0 +1,17 @@
+node_modules
+dist
+dist-server
+.data
+.git
+.github
+.claude
+screenshots
+docs/research
+docs/forge-sandbox-guide.pdf
+k8s
+*.md
+team19.yml
+team19.yaml
+*.kubeconfig
+.env
+.env.*
