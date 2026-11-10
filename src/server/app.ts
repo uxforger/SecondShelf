@@ -18,6 +18,8 @@ import {
   webhookSecret,
 } from './flows.ts';
 import { verifySignature } from './signature.ts';
+import { approveMrv, certificate, enquireShare, ensureProject, preview as carbonPreview, refreshMrv, retire, sendShare, submitMrv } from './carbon.ts';
+import { acceptLoan, applyForLoan, disburseLoan, offerAmount } from './loans.ts';
 import { apply, getDb, onChange, resetAll } from './state.ts';
 
 /** Where the browser should come back to after the hosted checkout. */
@@ -148,6 +150,23 @@ export function createApp(opts: { staticDir?: string } = {}) {
     wrap(async (req, res) => res.json(await authorisePassportConsent(String(req.params.id), String(req.body?.otp ?? '')))),
   );
 
+  // 5a. Carbon registry
+  app.get('/api/carbon/preview', (_req, res) => res.json(carbonPreview()));
+  app.post('/api/carbon/project', wrap(async (_req, res) => res.json(await ensureProject())));
+  app.post('/api/carbon/mrv', wrap(async (_req, res) => res.json(await submitMrv())));
+  app.post('/api/carbon/mrv/:id/refresh', wrap(async (req, res) => res.json((await refreshMrv(String(req.params.id))) ?? null)));
+  app.post('/api/carbon/mrv/:id/approve', wrap(async (req, res) => res.json((await approveMrv(String(req.params.id))) ?? null)));
+  app.post('/api/carbon/mrv/:id/retire', wrap(async (req, res) => res.json(await retire(String(req.params.id)))));
+  app.get('/api/carbon/certificates/:id', wrap(async (req, res) => res.json(await certificate(String(req.params.id)))));
+  app.post('/api/carbon/certificates/:id/share/enquire', wrap(async (req, res) => res.json(await enquireShare(String(req.params.id)))));
+  app.post('/api/carbon/certificates/:id/share/send', wrap(async (req, res) => res.json(await sendShare(String(req.params.id)))));
+
+  // 5b. Inventory loan
+  app.get('/api/loans/offer', (_req, res) => res.json({ amount: offerAmount() }));
+  app.post('/api/loans/apply', wrap(async (_req, res) => res.json(await applyForLoan())));
+  app.post('/api/loans/:id/accept', wrap(async (req, res) => res.json(await acceptLoan(String(req.params.id)))));
+  app.post('/api/loans/:id/disburse', wrap(async (req, res) => res.json(await disburseLoan(String(req.params.id)))));
+
   // DEMO_MODE hosted checkout, standing in for pay.xtradot.co.
   app.get('/api/mock-checkout/:reference', (req, res) => {
     const p = mockPaymentPage(req.params.reference);
@@ -159,7 +178,7 @@ body{margin:0;font-family:system-ui,sans-serif;background:#f6f8f3;color:#0b3b2e;
 main{background:#fff;border-radius:24px;padding:28px;width:min(360px,90vw);box-shadow:0 16px 48px rgba(11,59,46,.14)}
 p{color:#5a6e64;margin:4px 0}h1{font-size:34px;margin:8px 0 20px}button{width:100%;height:52px;border:0;border-radius:999px;font-size:17px;font-weight:600;margin-top:10px;cursor:pointer}
 .pay{background:#0b3b2e;color:#fff}.no{background:#e3ede0;color:#0b3b2e}small{display:block;margin-top:16px;color:#5a6e64;text-align:center}
-</style></head><body><main><p>Access Bank sandbox (demo mode)</p><p>${req.params.reference}</p><h1>${amount}</h1>
+</style></head><body><main><p>Bank sandbox (demo mode)</p><p>${req.params.reference}</p><h1>${amount}</h1>
 <form method="post"><button class="pay" name="ok" value="1">Pay ${amount}</button><button class="no" name="ok" value="0">Cancel</button></form>
 <small>Simulated checkout. No real money.</small></main></body></html>`);
   });
@@ -173,7 +192,7 @@ p{color:#5a6e64;margin:4px 0}h1{font-size:34px;margin:8px 0 20px}button{width:10
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
 
   if (opts.staticDir && fs.existsSync(opts.staticDir)) {
-    const dir = opts.staticDir;
+    const dir = path.resolve(opts.staticDir);
     app.use(
       express.static(dir, {
         index: false,

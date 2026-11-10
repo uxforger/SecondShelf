@@ -2,7 +2,10 @@ import { randomUUID } from 'node:crypto';
 import { ApiError, type BankStatement, type Fulfilment, type Order, type Payout } from '../lib/api/types.ts';
 import { BUYER } from '../lib/mock/catalogue.ts';
 import { mockBank } from './bank/mock.ts';
-import { bank, BankError, DEMO_MODE, DISTRIBUTOR_ACCOUNT, PASSPORT_ACCOUNT, SETTLEMENT_ACCOUNT, type TransferResult } from './bank/index.ts';
+import { bank, BankError, DEMO_MODE, DISTRIBUTOR_ACCOUNT, PASSPORT_ACCOUNT } from './bank/index.ts';
+import { onCarbonEvent } from './carbon.ts';
+import { onLoanEvent } from './loans.ts';
+import { applyTransferEvent, enquire, registerResolver, send, type TransferTarget } from './transfers.ts';
 import { kvGet, kvSet, now, sql } from './db.ts';
 import { apply, dryRun, getDb } from './state.ts';
 
@@ -123,20 +126,6 @@ async function doFinalize(reference: string): Promise<{ status: string; order?: 
 /* 3. Distributor payout after handover: name enquiry → transfer       */
 /* ------------------------------------------------------------------ */
 
-interface PayoutRow {
-  order_id: string;
-  reference: string;
-  idem_key: string;
-  status: string;
-  account_number: string;
-  account_name: string | null;
-  name_enquiry_ref: string | null;
-  enquired_at: string | null;
-  amount: number;
-}
-
-const ENQUIRY_TTL = 9 * 60 * 1000; // bank allows 10 min; leave a margin
-
 function handedOverOrder(orderId: string): Order {
   const o = getDb().orders.find((x) => x.id === orderId);
   if (!o) throw new ApiError('Order not found.');
@@ -144,121 +133,29 @@ function handedOverOrder(orderId: string): Order {
   return o;
 }
 
-function payoutRow(orderId: string) {
-  return sql.prepare('SELECT * FROM payouts WHERE order_id = ?').get(orderId) as PayoutRow | undefined;
-}
-
-/** Step 1: resolve the account name so the distributor sees who gets paid. */
-export async function enquirePayout(orderId: string) {
-  const o = handedOverOrder(orderId);
-  const row = payoutRow(orderId);
-  if (row && !['enquired'].includes(row.status)) return previewOf(row, o);
-  const fresh = row?.enquired_at && Date.now() - new Date(row.enquired_at).getTime() < ENQUIRY_TTL;
-  if (row && fresh) return previewOf(row, o);
-
-  const ne = await bank.nameEnquiry(DISTRIBUTOR_ACCOUNT);
-  const t = now();
-  if (row) {
-    sql
-      .prepare('UPDATE payouts SET account_name = ?, name_enquiry_ref = ?, enquired_at = ?, updated_at = ? WHERE order_id = ?')
-      .run(ne.accountName, ne.nameEnquiryRef, t, t, orderId);
-  } else {
-    sql
-      .prepare(
-        'INSERT INTO payouts (order_id, reference, idem_key, status, account_number, account_name, name_enquiry_ref, enquired_at, amount, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      )
-      .run(orderId, `PO-${o.ref.replace('SS-', '')}-${Date.now().toString(36).slice(-4)}`, randomUUID(), 'enquired', DISTRIBUTOR_ACCOUNT, ne.accountName, ne.nameEnquiryRef, t, o.total, t);
-  }
-  return previewOf(payoutRow(orderId)!, o);
-}
-
-function previewOf(row: PayoutRow, o: Order) {
-  return { accountName: row.account_name ?? '', accountNumber: row.account_number, bankName: 'Xtradot Bank', amount: row.amount ?? o.total, status: row.status };
-}
-
-/** Step 2: send. One payout per order; on a timeout we requery, never resend. */
-export async function sendPayout(orderId: string): Promise<Payout> {
-  const o = handedOverOrder(orderId);
-  let row = payoutRow(orderId);
-  if (!row || !row.name_enquiry_ref) {
-    await enquirePayout(orderId);
-    row = payoutRow(orderId)!;
-  }
-  if (row.status === 'successful') return o.payout!;
-  if (['sending', 'pending', 'unknown'].includes(row.status)) return settlePayout(o, row);
-
-  if (!row.enquired_at || Date.now() - new Date(row.enquired_at).getTime() > ENQUIRY_TTL) {
-    await enquirePayout(orderId);
-    row = payoutRow(orderId)!;
-  }
-
-  setPayoutStatus(orderId, 'sending');
-  try {
-    const res = await bank.transfer({
-      reference: row.reference,
-      sourceAccount: SETTLEMENT_ACCOUNT,
-      destinationAccount: row.account_number,
-      nameEnquiryRef: row.name_enquiry_ref!,
-      amount: row.amount,
-      narration: `SecondShelf ${o.ref}`,
-      idempotencyKey: row.idem_key,
-    });
-    return recordTransfer(o, row, res);
-  } catch (e) {
-    if (e instanceof BankError && e.isTimeout) {
-      setPayoutStatus(orderId, 'unknown');
-      return settlePayout(o, { ...row, status: 'unknown' });
-    }
-    // Nothing moved: clear the attempt so the next one gets a fresh key and reference.
-    sql.prepare('DELETE FROM payouts WHERE order_id = ?').run(orderId);
-    throw e;
-  }
-}
-
-function setPayoutStatus(orderId: string, status: string) {
-  sql.prepare('UPDATE payouts SET status = ?, updated_at = ? WHERE order_id = ?').run(status, now(), orderId);
-}
-
-/** Poll the transfer until it is final. Used after 504s and for pending interbank. */
-async function settlePayout(o: Order, row: PayoutRow): Promise<Payout> {
-  for (let i = 0; i < 6; i++) {
-    try {
-      const res = await bank.getTransfer(row.reference);
-      if (res.status !== 'pending') return recordTransfer(o, row, res);
-    } catch (e) {
-      if (!(e instanceof BankError) || (e.httpStatus !== 404 && !e.isTimeout)) throw e;
-    }
-    await sleep(2000);
-  }
-  const payout = toPayout(o, row, { reference: row.reference, status: 'pending', raw: null });
-  apply({ type: 'order/payout', at: now(), orderId: o.id, payout: { ...payout, status: row.status === 'unknown' ? 'unknown' : 'pending' } });
-  return payout;
-}
-
-function toPayout(o: Order, row: PayoutRow, res: TransferResult): Payout {
+function orderTarget(o: Order): TransferTarget {
   return {
-    status: res.status === 'reversed' ? 'failed' : res.status,
-    accountName: row.account_name ?? '',
-    accountNumber: row.account_number,
-    bankName: 'Xtradot Bank',
-    amount: row.amount ?? o.total,
-    fee: res.fee,
-    vat: res.vat,
-    stampDuty: res.stampDuty,
-    totalDebit: res.totalDebit,
-    reference: row.reference,
-    sessionId: res.sessionId,
-    at: now(),
+    key: o.id,
+    refBase: o.ref.replace('SS-', ''),
+    account: DISTRIBUTOR_ACCOUNT,
+    amount: o.total,
+    narration: `SecondShelf ${o.ref}`,
+    record: (payout) => apply({ type: 'order/payout', at: payout.at, orderId: o.id, payout }),
   };
 }
 
-function recordTransfer(o: Order, row: PayoutRow, res: TransferResult): Payout {
-  const payout = toPayout(o, row, res);
-  sql
-    .prepare('UPDATE payouts SET status = ?, bank_json = ?, updated_at = ? WHERE order_id = ?')
-    .run(payout.status, JSON.stringify(res.raw ?? null), now(), o.id);
-  apply({ type: 'order/payout', at: payout.at, orderId: o.id, payout });
-  return payout;
+registerResolver((key) => {
+  const o = getDb().orders.find((x) => x.id === key);
+  return o ? orderTarget(o) : null;
+});
+
+/** Step 1: resolve the account name so the distributor sees who gets paid. */
+export const enquirePayout = (orderId: string) => enquire(orderTarget(handedOverOrder(orderId)));
+
+/** Step 2: send. One payout per order; on a timeout we requery, never resend. */
+export function sendPayout(orderId: string): Promise<Payout> {
+  const o = handedOverOrder(orderId);
+  return send(orderTarget(o), o.payout);
 }
 
 /* ------------------------------------------------------------------ */
@@ -313,12 +210,8 @@ export async function handleEvent(type: string, data: Record<string, any>) {
     return;
   }
   if (type.startsWith('transfer.') && reference) {
-    const row = sql.prepare('SELECT * FROM payouts WHERE reference = ?').get(reference) as PayoutRow | undefined;
-    if (!row) return;
-    const o = getDb().orders.find((x) => x.id === row.order_id);
-    if (!o) return;
     const status = type.split('.')[1];
-    recordTransfer(o, row, {
+    applyTransferEvent(reference, {
       reference,
       status: status === 'successful' ? 'successful' : status === 'reversed' ? 'reversed' : status === 'failed' ? 'failed' : 'pending',
       fee: data.fee,
@@ -328,6 +221,14 @@ export async function handleEvent(type: string, data: Record<string, any>) {
       sessionId: data.session_id,
       raw: data,
     });
+    return;
+  }
+  if (type.startsWith('carbon.')) {
+    await onCarbonEvent(type, data).catch((e) => console.warn(`[hook] ${type}: ${(e as Error).message}`));
+    return;
+  }
+  if (type.startsWith('loan.')) {
+    await onLoanEvent(type, data).catch((e) => console.warn(`[hook] ${type}: ${(e as Error).message}`));
   }
 }
 

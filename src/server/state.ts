@@ -51,5 +51,10 @@ export function dryRun(action: Action): void {
 
 export function resetAll() {
   sql.exec('DELETE FROM payments; DELETE FROM payouts; DELETE FROM consents;');
-  return commit({ ...seed(new Date()), version: db.version + 1 });
+  // Fresh carbon and loan story on reset; the one carbon project is kept on purpose.
+  sql.exec("DELETE FROM kv WHERE key LIKE 'mrv_%' OR key LIKE 'retire_%' OR key LIKE 'loan_%';");
+  const projectId = db.carbon?.projectId;
+  const next: Db = { ...seed(new Date()), version: db.version + 1 };
+  if (projectId && db.carbon) next.carbon = { ...db.carbon, submissions: [], retirements: [] };
+  return commit(next);
 }

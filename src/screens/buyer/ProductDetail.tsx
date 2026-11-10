@@ -130,7 +130,7 @@ export function ProductDetail({ id }: { id: string; session: Session }) {
             }}
             data-autofocus
           >
-            Pay with Access Bank
+            Pay with bank
           </Button>
         }
       >

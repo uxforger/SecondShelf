@@ -11,6 +11,11 @@ import {
   type Payout,
   type PaymentResult,
   type PayoutPreview,
+  type CarbonCertificate,
+  type CarbonPreview,
+  type CarbonRetirement,
+  type CarbonSubmission,
+  type Loan,
   type Product,
   type Role,
   type SecondShelfApi,
@@ -100,6 +105,26 @@ export function createMockApi(): SecondShelfApi {
     if (mode !== 'live' || (pending > 0 && !force)) return;
     const fresh = await fetchState();
     if (fresh && (force || pending === 0) && fresh.version !== db.version) set(fresh);
+  }
+
+  async function get<T>(url: string): Promise<T> {
+    await ready;
+    if (mode !== 'live') throw new ApiError('Needs a connection to the SecondShelf server.');
+    let res: Response;
+    try {
+      res = await fetch(url, { cache: 'no-store' });
+    } catch {
+      throw new ApiError('No connection. Try again.');
+    }
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(json.error ?? 'Something went wrong.');
+    return json as T;
+  }
+
+  async function postAndPull<T>(url: string, body?: unknown): Promise<T> {
+    const r = await post<T>(url, body);
+    await pull(true);
+    return r;
   }
 
   /** Bank-backed steps run on the server only. */
@@ -306,6 +331,20 @@ export function createMockApi(): SecondShelfApi {
       await pull(true);
       return s;
     },
+
+    carbonPreview: () => get<CarbonPreview>('/api/carbon/preview'),
+    submitMrv: () => postAndPull<CarbonSubmission>('/api/carbon/mrv'),
+    refreshMrv: (id: string) => postAndPull<CarbonSubmission | null>(`/api/carbon/mrv/${encodeURIComponent(id)}/refresh`),
+    approveMrv: (id: string) => postAndPull<CarbonSubmission | null>(`/api/carbon/mrv/${encodeURIComponent(id)}/approve`),
+    retireCredits: (id: string) => postAndPull<CarbonRetirement>(`/api/carbon/mrv/${encodeURIComponent(id)}/retire`),
+    getCertificate: (id: string) => get<CarbonCertificate>(`/api/carbon/certificates/${encodeURIComponent(id)}`),
+    enquireCarbonShare: (id: string) => post<PayoutPreview>(`/api/carbon/certificates/${encodeURIComponent(id)}/share/enquire`),
+    sendCarbonShare: (id: string) => postAndPull<Payout>(`/api/carbon/certificates/${encodeURIComponent(id)}/share/send`),
+
+    loanOffer: () => get<{ amount: number }>('/api/loans/offer'),
+    applyLoan: () => postAndPull<Loan>('/api/loans/apply'),
+    acceptLoan: (id: string) => postAndPull<Loan>(`/api/loans/${encodeURIComponent(id)}/accept`),
+    disburseLoan: (id: string) => postAndPull<Loan>(`/api/loans/${encodeURIComponent(id)}/disburse`),
 
     async resetDemo() {
       if (mode === 'live') {

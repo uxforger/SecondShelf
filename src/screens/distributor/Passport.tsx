@@ -1,4 +1,4 @@
-import { BadgeCheck, Landmark } from 'lucide-react';
+import { BadgeCheck, Banknote, Landmark } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useState } from 'react';
 import { Page } from '../../components/layout/Page';
@@ -15,6 +15,10 @@ import { business, metrics } from '../../lib/selectors';
 import { toast, useDb } from '../../lib/store';
 import { useDesktop } from '../../lib/useMedia';
 import { ActivityFeed, CarbonCard, MoneyCard } from './parts';
+import { CarbonRegistryCard } from './Carbon';
+import { LoanCard, LoanSheet } from './Loan';
+import { carbonTotals } from '../../lib/selectors';
+import { navigate } from '../../lib/router';
 
 export function Passport({ session }: { session: Session }) {
   const db = useDb();
@@ -23,6 +27,8 @@ export function Passport({ session }: { session: Session }) {
   const biz = business(db, session.businessId);
   const activity = useMemo(() => db.activity.filter((a) => a.businessIds.includes(session.businessId)), [db, session.businessId]);
   const [consent, setConsent] = useState(false);
+  const [loanOpen, setLoanOpen] = useState(false);
+  const ct = useMemo(() => carbonTotals(db), [db]);
   // idle -> requesting (bank creates consent) -> otp -> reading (authorise + statement) -> done
   const [sharing, setSharing] = useState<'idle' | 'requesting' | 'otp' | 'reading' | 'done'>('idle');
   const [step, setStep] = useState(0);
@@ -96,9 +102,16 @@ export function Passport({ session }: { session: Session }) {
             </div>
             <p className="t-label mt-6 text-white/75">Verified sales · 90 days</p>
             <Figure value={m.verifiedSales90} format={naira} className="mt-1 block text-[2.25rem] font-semibold leading-[2.625rem] tracking-[-0.02em] lg:text-[2.75rem] lg:leading-[3rem]" />
-            <Button variant="cta" className="mt-6" icon={<Landmark className="size-5" />} onClick={() => setConsent(true)}>
-              {db.passportSharedAt ? 'Share again' : 'Share with bank'}
-            </Button>
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Button variant="cta" icon={<Landmark className="size-5" />} onClick={() => setConsent(true)}>
+                {db.passportSharedAt ? 'Share again' : 'Share with bank'}
+              </Button>
+              {db.loan?.status !== 'disbursed' && (
+                <Button variant="ghost" className="!text-white ring-1 ring-white/30" icon={<Banknote className="size-5" />} onClick={() => setLoanOpen(true)}>
+                  {db.loan?.status === 'offered' || db.loan?.status === 'accepted' ? 'See loan offer' : 'Get stock loan'}
+                </Button>
+              )}
+            </div>
           </Card>
 
           {statement && (
@@ -138,10 +151,12 @@ export function Passport({ session }: { session: Session }) {
             </dl>
           </Card>
 
+          {db.loan && <LoanCard loan={db.loan} onOpen={() => setLoanOpen(true)} />}
           {!desktop && (
             <>
               <MoneyCard m={m} />
               <CarbonCard m={m} />
+              <CarbonRegistryCard totals={ct} onOpen={() => navigate('/carbon')} />
             </>
           )}
         </div>
@@ -154,6 +169,7 @@ export function Passport({ session }: { session: Session }) {
         </Card>
       </div>
 
+      <LoanSheet open={loanOpen} onClose={() => setLoanOpen(false)} verifiedSales={m.verifiedSales90} />
       <BottomSheet
         open={consent}
         onClose={closeConsent}

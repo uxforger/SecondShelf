@@ -191,3 +191,30 @@ export function atRisk(db: Db, sellerId: string, ref: string): AtRisk {
     .sort((a, b) => b.batch.quantity * b.product.price - a.batch.quantity * a.product.price);
   return { value: items.reduce((n, v) => n + v.batch.quantity * v.product.price, 0), count: items.length, items };
 }
+
+export interface CarbonTotals {
+  submitted: number;
+  verified: number;
+  retired: number;
+  /** Naira paid to the distributor as their 60% share. */
+  paidOut: number;
+  underReview: number;
+}
+
+/** Registry totals in tCO2e (paid out in naira). Rejected reports don't count. */
+export function carbonTotals(db: Db): CarbonTotals {
+  const c = db.carbon;
+  const t: CarbonTotals = { submitted: 0, verified: 0, retired: 0, paidOut: 0, underReview: 0 };
+  if (!c) return t;
+  for (const s of c.submissions) {
+    if (s.status === 'rejected') continue;
+    t.submitted += s.tco2e;
+    if (s.status === 'verified') t.verified += s.creditsIssued ?? s.tco2e;
+    else t.underReview += 1;
+  }
+  for (const r of c.retirements) {
+    t.retired += r.tco2e;
+    if (r.payout?.status === 'successful') t.paidOut += r.payout.amount;
+  }
+  return t;
+}

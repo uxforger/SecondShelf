@@ -11,12 +11,18 @@ import { navigate } from '../../lib/router';
 import { metrics } from '../../lib/selectors';
 import { useDb } from '../../lib/store';
 import { ActivityFeed, CarbonCard, MoneyCard, StatBlock } from './parts';
+import { CarbonRegistryCard } from './Carbon';
+import { LoanCard, LoanSheet } from './Loan';
+import { carbonTotals } from '../../lib/selectors';
+import { useState } from 'react';
 
 export function Overview({ session }: { session: Session }) {
   const db = useDb();
   const m = useMemo(() => metrics(db, session.businessId), [db, session.businessId]);
   const activity = useMemo(() => db.activity.filter((a) => a.businessIds.includes(session.businessId)), [db, session.businessId]);
   const live = api.connection() === 'live';
+  const [loanOpen, setLoanOpen] = useState(false);
+  const ct = useMemo(() => carbonTotals(db), [db]);
 
   return (
     <Page
@@ -39,6 +45,13 @@ export function Overview({ session }: { session: Session }) {
         </div>
         <div className="lg:col-span-5">
           <CarbonCard m={m} />
+        </div>
+
+        <div className="lg:col-span-7">
+          <CarbonRegistryCard totals={ct} onOpen={() => navigate('/carbon', { tab: true })} />
+        </div>
+        <div className="lg:col-span-5">
+          <LoanCard loan={db.loan} onOpen={() => setLoanOpen(true)} />
         </div>
 
         <Card className="p-5 lg:col-span-5 lg:p-6">
@@ -66,6 +79,7 @@ export function Overview({ session }: { session: Session }) {
           </div>
         </Card>
       </div>
+      <LoanSheet open={loanOpen} onClose={() => setLoanOpen(false)} verifiedSales={m.verifiedSales90} />
     </Page>
   );
 }

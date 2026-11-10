@@ -26,6 +26,8 @@ const Sales = lazy(() => loadDistributor().then((m) => ({ default: m.Sales })));
 const Handover = lazy(() => loadDistributor().then((m) => ({ default: m.Handover })));
 const Passport = lazy(() => loadDistributor().then((m) => ({ default: m.Passport })));
 const Live = lazy(() => loadDistributor().then((m) => ({ default: m.Live })));
+const Carbon = lazy(() => loadDistributor().then((m) => ({ default: m.Carbon })));
+const Certificate = lazy(() => loadDistributor().then((m) => ({ default: m.Certificate })));
 const Shop = lazy(() => loadBuyer().then((m) => ({ default: m.Shop })));
 const ProductDetail = lazy(() => loadBuyer().then((m) => ({ default: m.ProductDetail })));
 const Orders = lazy(() => loadBuyer().then((m) => ({ default: m.Orders })));
@@ -80,7 +82,11 @@ function resolve(session: Session, path: string): Resolved | null {
         return { key: clean, el: <Passport session={session} /> };
       case '/live':
         return { key: clean, el: <Live session={session} />, focus: true, stage: true };
+      case '/carbon':
+        return { key: clean, el: <Carbon session={session} /> };
     }
+    const cert = match('/carbon/certificate/:id', clean);
+    if (cert) return { key: clean, el: <Certificate id={cert.id} />, focus: true };
   }
 
   if (session.role === 'buyer') {

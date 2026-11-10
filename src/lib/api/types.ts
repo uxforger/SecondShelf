@@ -119,7 +119,7 @@ export interface Order {
   bankFee?: number;
 }
 
-export type ActivityKind = 'added' | 'listed' | 'paid' | 'handed_over' | 'donated' | 'collected' | 'shared' | 'paid_out';
+export type ActivityKind = 'added' | 'listed' | 'paid' | 'handed_over' | 'donated' | 'collected' | 'shared' | 'paid_out' | 'carbon' | 'loan';
 
 export interface Activity {
   id: string;
@@ -148,6 +148,89 @@ export interface Db {
   activity: Activity[];
   passportSharedAt?: string;
   passportStatement?: BankStatement;
+  carbon?: CarbonState;
+  loan?: Loan;
+}
+
+/* ---------------- Carbon registry ---------------- */
+
+export type MrvStatus = 'submitted' | 'under_review' | 'verified' | 'rejected';
+
+export interface CarbonSubmission {
+  mrvId: string;
+  status: MrvStatus;
+  /** Our VM0046 figure, t CO2e. */
+  tco2e: number;
+  /** Credits the registry issued (t CO2e), once verified. */
+  creditsIssued?: number;
+  /** "order:<id>" and "donation:<batchId>" items covered by this report. */
+  itemIds: string[];
+  handovers: number;
+  collections: number;
+  foodKg: number;
+  periodStart: string;
+  periodEnd: string;
+  evidence: string;
+  submittedAt: string;
+  verifiedAt?: string;
+  reviewNote?: string;
+}
+
+export interface CarbonRetirement {
+  certificateId: string;
+  mrvId: string;
+  tco2e: number;
+  serial?: string;
+  beneficiary: string;
+  reason: string;
+  retiredAt: string;
+  /** Value of the retired credits and the distributor's 60% share, naira. */
+  valueNaira: number;
+  distributorShare: number;
+  payout?: Payout;
+}
+
+export interface CarbonState {
+  projectId: string;
+  projectName: string;
+  methodology: string;
+  createdAt: string;
+  submissions: CarbonSubmission[];
+  retirements: CarbonRetirement[];
+}
+
+export interface CarbonCertificate {
+  id: string;
+  projectId: string;
+  projectName: string;
+  tco2e: number;
+  serial?: string;
+  beneficiary?: string;
+  reason?: string;
+  retiredAt?: string;
+  registry: string;
+  methodology: string;
+  source: 'registry' | 'local';
+}
+
+/* ---------------- Inventory loan ---------------- */
+
+export type LoanStatus = 'offered' | 'accepted' | 'disbursed' | 'declined' | 'repaid';
+
+export interface Loan {
+  id: string;
+  status: LoanStatus;
+  principal: number;
+  interestRate?: number;
+  tenorDays?: number;
+  fee?: number;
+  repaymentTotal?: number;
+  dueDate?: string;
+  accountNumber: string;
+  appliedAt: string;
+  acceptedAt?: string;
+  disbursedAt?: string;
+  declineReason?: string;
 }
 
 export interface Session {
@@ -172,6 +255,14 @@ export interface PaymentResult {
   status: 'paid' | 'pending' | 'failed';
   order?: Order;
   message?: string;
+}
+
+export interface CarbonPreview {
+  items: number;
+  handovers: number;
+  collections: number;
+  foodKg: number;
+  tco2e: number;
 }
 
 export interface PayoutPreview {
@@ -224,6 +315,23 @@ export interface SecondShelfApi {
   /** Open-banking consent for the Passport; authorise with the OTP. */
   createPassportConsent(): Promise<{ consentId: string; accountNumber: string }>;
   authorisePassportConsent(consentId: string, otp: string): Promise<BankStatement>;
+
+  /** Carbon registry (server-side, sandbox). */
+  carbonPreview(): Promise<CarbonPreview>;
+  submitMrv(): Promise<CarbonSubmission>;
+  refreshMrv(mrvId: string): Promise<CarbonSubmission | null>;
+  /** Sandbox only: act as the independent verifier. */
+  approveMrv(mrvId: string): Promise<CarbonSubmission | null>;
+  retireCredits(mrvId: string): Promise<CarbonRetirement>;
+  getCertificate(certificateId: string): Promise<CarbonCertificate>;
+  enquireCarbonShare(certificateId: string): Promise<PayoutPreview>;
+  sendCarbonShare(certificateId: string): Promise<Payout>;
+
+  /** Inventory loan from the Passport. */
+  loanOffer(): Promise<{ amount: number }>;
+  applyLoan(): Promise<Loan>;
+  acceptLoan(loanId: string): Promise<Loan>;
+  disburseLoan(loanId: string): Promise<Loan>;
   confirmHandover(ref: string): Promise<Order>;
   resetDemo(): Promise<void>;
 }

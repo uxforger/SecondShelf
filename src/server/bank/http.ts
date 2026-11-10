@@ -51,6 +51,40 @@ function log(method: string, path: string, status: number | string, requestId?: 
   console.log(`[bank] ${method} ${path.split('?')[0]} -> ${status}${why}${requestId ? ` (${requestId})` : ''}`);
 }
 
+/** Logs which fields a new endpoint returned (names only, never values). */
+function shape(what: string, d: Json) {
+  console.log(`[bank] ${what} fields: ${Object.keys(d ?? {}).join(',')}`);
+}
+
+const round3 = (n: number) => Math.round(n * 1000) / 1000;
+
+function toMrv(d: Json) {
+  const status = String(d.status ?? d.review_status ?? 'submitted').toLowerCase();
+  return {
+    id: String(d.id ?? d.mrv_id),
+    status,
+    creditsIssued: num(d.credits_issued ?? d.issued_credits ?? d.verified_tco2e ?? d.credits),
+    note: d.review_notes ?? d.notes ?? d.reason,
+    raw: d,
+  };
+}
+
+function toLoan(d: Json) {
+  const offer = (d.offer ?? d) as Json;
+  return {
+    id: String(d.id ?? d.loan_id ?? d.application_id),
+    status: String(d.status ?? 'offered').toLowerCase(),
+    principal: num(offer.principal ?? offer.amount ?? offer.approved_amount),
+    interestRate: num(offer.interest_rate ?? offer.rate),
+    tenorDays: num(offer.tenor_days ?? offer.tenor),
+    fee: num(offer.fee ?? offer.processing_fee),
+    repaymentTotal: num(offer.total_repayment ?? offer.repayment_amount ?? offer.total_payable),
+    dueDate: offer.due_date ?? offer.maturity_date,
+    reason: d.decline_reason ?? d.reason,
+    raw: d,
+  };
+}
+
 const num = (v: unknown) => (v === undefined || v === null || v === '' ? undefined : Number(v));
 
 function paymentStatus(s: unknown): PaymentStatus {
@@ -197,6 +231,112 @@ export const httpBank: BankClient = {
     await takeSlot();
     const res = await fetch(`${BASE}/webhooks/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'x-api-key': key }, signal: AbortSignal.timeout(32_000) });
     log('DELETE', '/webhooks/{id}', res.status);
+  },
+
+  async createCarbonProject(i) {
+    const d = await call(
+      'POST',
+      '/carbon/projects',
+      { name: i.name, methodology: i.methodology, location: i.location, country: 'NG', description: i.description, project_type: 'food_waste_avoidance', sector: 'waste' },
+      i.idempotencyKey,
+    );
+    shape('carbon project', d);
+    return { id: String(d.id ?? d.project_id), status: String(d.status ?? 'registered'), raw: d };
+  },
+
+  async submitMrv(i) {
+    const d = await call(
+      'POST',
+      `/carbon/projects/${encodeURIComponent(i.projectId)}/mrv`,
+      {
+        period_start: i.periodStart,
+        period_end: i.periodEnd,
+        methodology: 'VM0046',
+        tco2e: round3(i.tco2e),
+        claimed_tco2e: round3(i.tco2e),
+        emission_reductions_tco2e: round3(i.tco2e),
+        evidence_summary: i.evidenceSummary,
+        evidence: i.items.map((x) => ({ type: x.kind, reference: x.reference, net_weight_kg: round3(x.netWeightKg), tco2e: round3(x.tco2e), date: x.at })),
+      },
+      i.idempotencyKey,
+    );
+    shape('mrv submit', d);
+    return toMrv(d);
+  },
+
+  async getMrv(id) {
+    return toMrv(await call('GET', `/carbon/mrv/${encodeURIComponent(id)}`));
+  },
+
+  async reviewMrv(id, approve, idempotencyKey) {
+    const d = await call(
+      'POST',
+      `/carbon/mrv/${encodeURIComponent(id)}/review`,
+      { decision: approve ? 'approve' : 'reject', outcome: approve ? 'verified' : 'rejected', notes: 'Sandbox verifier review of SecondShelf handover and collection records.' },
+      idempotencyKey,
+    );
+    shape('mrv review', d);
+    return toMrv(d);
+  },
+
+  async retireCredits(i) {
+    const d = await call(
+      'POST',
+      '/carbon/credits/retire',
+      { project_id: i.projectId, mrv_id: i.mrvId, quantity: round3(i.quantity), tco2e: round3(i.quantity), beneficiary: i.beneficiary, beneficiary_name: i.beneficiary, reason: i.reason, retirement_reason: i.reason },
+      i.idempotencyKey,
+    );
+    shape('retire', d);
+    return {
+      certificateId: String(d.certificate_id ?? d.certificate?.id ?? d.id),
+      quantity: Number(d.quantity ?? d.tco2e ?? i.quantity),
+      serial: d.serial ?? d.serial_number ?? d.certificate?.serial,
+      valueNaira: num(d.value ?? d.amount ?? d.value_ngn),
+      raw: d,
+    };
+  },
+
+  async getCertificate(id) {
+    const d = await call('GET', `/carbon/certificates/${encodeURIComponent(id)}`);
+    shape('certificate', d);
+    return {
+      id: String(d.id ?? d.certificate_id ?? id),
+      projectId: d.project_id ?? d.project?.id,
+      projectName: d.project_name ?? d.project?.name,
+      quantity: Number(d.quantity ?? d.tco2e ?? 0),
+      serial: d.serial ?? d.serial_number ?? d.serial_range,
+      beneficiary: d.beneficiary ?? d.beneficiary_name,
+      reason: d.reason ?? d.retirement_reason,
+      retiredAt: d.retired_at ?? d.issued_at ?? d.created_at,
+      raw: d,
+    };
+  },
+
+  async applyLoan(i) {
+    const d = await call(
+      'POST',
+      '/loans/applications',
+      { account_number: i.accountNumber, amount: Number(i.amount.toFixed(2)), tenor_days: i.tenorDays, purpose: i.purpose, product: 'inventory' },
+      i.idempotencyKey,
+    );
+    shape('loan apply', d);
+    return toLoan(d);
+  },
+
+  async getLoan(id) {
+    return toLoan(await call('GET', `/loans/${encodeURIComponent(id)}`));
+  },
+
+  async acceptLoan(id, idempotencyKey) {
+    const d = await call('POST', `/loans/${encodeURIComponent(id)}/accept`, { accept: true }, idempotencyKey);
+    shape('loan accept', d);
+    return toLoan(d);
+  },
+
+  async disburseLoan(id, idempotencyKey) {
+    const d = await call('POST', `/loans/${encodeURIComponent(id)}/disburse`, {}, idempotencyKey);
+    shape('loan disburse', d);
+    return toLoan(d);
   },
 
   async registerWebhook(url, idempotencyKey) {

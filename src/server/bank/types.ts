@@ -68,6 +68,82 @@ export interface StatementSummary {
   to?: string;
 }
 
+export interface CarbonProjectInput {
+  name: string;
+  methodology: string;
+  location: string;
+  description: string;
+  idempotencyKey: string;
+}
+
+export interface MrvInput {
+  projectId: string;
+  periodStart: string;
+  periodEnd: string;
+  tco2e: number;
+  evidenceSummary: string;
+  items: { id: string; kind: 'sale' | 'donation'; netWeightKg: number; tco2e: number; reference: string; at: string }[];
+  idempotencyKey: string;
+}
+
+export interface MrvResult {
+  id: string;
+  status: string;
+  creditsIssued?: number;
+  note?: string;
+  raw: unknown;
+}
+
+export interface RetireInput {
+  projectId: string;
+  mrvId: string;
+  quantity: number;
+  beneficiary: string;
+  reason: string;
+  idempotencyKey: string;
+}
+
+export interface RetireResult {
+  certificateId: string;
+  quantity: number;
+  serial?: string;
+  valueNaira?: number;
+  raw: unknown;
+}
+
+export interface CertificateResult {
+  id: string;
+  projectId?: string;
+  projectName?: string;
+  quantity: number;
+  serial?: string;
+  beneficiary?: string;
+  reason?: string;
+  retiredAt?: string;
+  raw: unknown;
+}
+
+export interface LoanInput {
+  accountNumber: string;
+  amount: number;
+  tenorDays: number;
+  purpose: string;
+  idempotencyKey: string;
+}
+
+export interface LoanResult {
+  id: string;
+  status: string;
+  principal?: number;
+  interestRate?: number;
+  tenorDays?: number;
+  fee?: number;
+  repaymentTotal?: number;
+  dueDate?: string;
+  reason?: string;
+  raw: unknown;
+}
+
 export interface BankClient {
   readonly mode: 'sandbox' | 'mock';
   checkout(input: CheckoutInput): Promise<CheckoutResult>;
@@ -81,6 +157,19 @@ export interface BankClient {
   registerWebhook(url: string, idempotencyKey: string): Promise<{ id: string; secret: string }>;
   listWebhooks(): Promise<{ id: string; url: string }[]>;
   deleteWebhook(id: string): Promise<void>;
+
+  createCarbonProject(input: CarbonProjectInput): Promise<{ id: string; status: string; raw: unknown }>;
+  submitMrv(input: MrvInput): Promise<MrvResult>;
+  getMrv(id: string): Promise<MrvResult>;
+  /** Sandbox: we play the independent verifier. */
+  reviewMrv(id: string, approve: boolean, idempotencyKey: string): Promise<MrvResult>;
+  retireCredits(input: RetireInput): Promise<RetireResult>;
+  getCertificate(id: string): Promise<CertificateResult>;
+
+  applyLoan(input: LoanInput): Promise<LoanResult>;
+  getLoan(id: string): Promise<LoanResult>;
+  acceptLoan(id: string, idempotencyKey: string): Promise<LoanResult>;
+  disburseLoan(id: string, idempotencyKey: string): Promise<LoanResult>;
 }
 
 export class BankError extends Error {

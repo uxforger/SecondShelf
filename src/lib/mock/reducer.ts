@@ -1,4 +1,4 @@
-import { ApiError, type Activity, type BankStatement, type Batch, type Db, type Order, type Payout, type Product } from '../api/types.ts';
+import { ApiError, type Activity, type BankStatement, type Batch, type CarbonState, type Db, type Loan, type Order, type Payout, type Product } from '../api/types.ts';
 import { daysLeft } from '../dates.ts';
 import { discountedPrice, URGENT_DAYS } from '../expiry.ts';
 import { FOOD_BANK } from './catalogue.ts';
@@ -19,7 +19,9 @@ export type Action =
   | { type: 'passport/share'; at: string }
   // Server-only: set from verified bank responses, never accepted from a browser.
   | { type: 'order/payout'; at: string; orderId: string; payout: Payout }
-  | { type: 'passport/bank'; at: string; statement: BankStatement };
+  | { type: 'passport/bank'; at: string; statement: BankStatement }
+  | { type: 'carbon/set'; at: string; carbon: CarbonState; note?: { title: string; detail?: string; amount?: number } }
+  | { type: 'loan/set'; at: string; loan: Loan; note?: { title: string; detail?: string; amount?: number } };
 
 /** Actions a browser may send. Payments, payouts and bank data are server-only. */
 export const CLIENT_ACTIONS: Action['type'][] = ['batch/add', 'batch/list', 'batch/unlist', 'batch/donate', 'donation/collect', 'order/handover'];
@@ -260,6 +262,22 @@ export function reduce(db: Db, action: Action): Db {
           businessIds: ['biz-ade'],
         }),
       };
+    }
+
+    case 'carbon/set':
+    case 'loan/set': {
+      const next: Db = action.type === 'carbon/set' ? { ...db, version, carbon: action.carbon } : { ...db, version, loan: action.loan };
+      if (action.note) {
+        next.activity = withActivity(db, {
+          at: action.at,
+          kind: action.type === 'carbon/set' ? 'carbon' : 'loan',
+          title: action.note.title,
+          detail: action.note.detail,
+          amount: action.note.amount,
+          businessIds: ['biz-ade'],
+        });
+      }
+      return next;
     }
 
     case 'passport/share': {

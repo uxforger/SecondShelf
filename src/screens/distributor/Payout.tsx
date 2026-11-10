@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { Button } from '../../components/ui/Button';
 import { ProgressSteps, Skeleton } from '../../components/ui/Feedback';
-import { api, ApiError, type Order, type PayoutPreview } from '../../lib/api';
+import { api, ApiError, type Order, type Payout, type PayoutPreview } from '../../lib/api';
 import { naira } from '../../lib/format';
 import { spring } from '../../lib/motion';
 
@@ -18,6 +18,24 @@ type State =
  * paid), then one tap to send. Fees come from the bank's response.
  */
 export function PayoutCard({ order }: { order: Order }) {
+  return <TransferCard idKey={order.id} payout={order.payout} enquire={() => api.enquirePayout(order.id)} send={() => api.sendPayout(order.id)} />;
+}
+
+/** Any one-off payout: name enquiry first, then one tap to send. */
+export function TransferCard({
+  idKey,
+  payout,
+  enquire: enquireFn,
+  send: sendFn,
+  doneLabel = 'Paid out',
+}: {
+  idKey: string;
+  payout?: Payout;
+  enquire: () => Promise<PayoutPreview>;
+  send: () => Promise<Payout>;
+  doneLabel?: string;
+}) {
+  const order = { payout };
   const done = order.payout?.status === 'successful';
   const waiting = order.payout && ['pending', 'unknown'].includes(order.payout.status);
   const [state, setState] = useState<State>({ s: 'enquiring' });
@@ -25,7 +43,7 @@ export function PayoutCard({ order }: { order: Order }) {
   const enquire = async () => {
     setState({ s: 'enquiring' });
     try {
-      setState({ s: 'ready', preview: await api.enquirePayout(order.id) });
+      setState({ s: 'ready', preview: await enquireFn() });
     } catch (e) {
       setState({ s: 'error', message: e instanceof ApiError ? e.message : 'Could not reach the bank.' });
     }
@@ -34,12 +52,12 @@ export function PayoutCard({ order }: { order: Order }) {
   useEffect(() => {
     if (!done && !waiting) void enquire();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [order.id]);
+  }, [idKey]);
 
   const send = async (preview: PayoutPreview) => {
     setState({ s: 'sending', preview, step: 1 });
     try {
-      await api.sendPayout(order.id);
+      await sendFn();
     } catch (e) {
       setState({ s: 'error', message: e instanceof ApiError ? e.message : 'Could not reach the bank.' });
     }
@@ -47,7 +65,7 @@ export function PayoutCard({ order }: { order: Order }) {
 
   const check = async () => {
     try {
-      await api.sendPayout(order.id); // polls the transfer, never resends
+      await sendFn(); // polls the transfer, never resends
     } catch (e) {
       setState({ s: 'error', message: e instanceof ApiError ? e.message : 'Could not reach the bank.' });
     }
@@ -59,7 +77,7 @@ export function PayoutCard({ order }: { order: Order }) {
     return (
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={spring} className="rounded-[20px] bg-[#dcefdc] p-4 text-left">
         <p className="t-label flex items-center gap-2 text-success-ink">
-          <Landmark className="size-5" /> Paid out
+          <Landmark className="size-5" /> {doneLabel}
         </p>
         <p className="num mt-1 text-[1.375rem] font-semibold leading-7 text-deep">{naira(p.amount)}</p>
         <p className="t-caption num mt-0.5 text-success-ink">

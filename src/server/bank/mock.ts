@@ -8,6 +8,9 @@ import { BankError, type BankClient } from './types.ts';
  */
 const payments = new Map<string, { amount: number; status: 'pending' | 'successful' | 'failed'; callbackUrl: string }>();
 const consents = new Map<string, { status: string }>();
+const mrvs = new Map<string, { status: string; tco2e: number }>();
+const certs = new Map<string, { projectId: string; quantity: number; beneficiary: string; reason: string; at: string }>();
+const loans = new Map<string, { status: string }>();
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function mockPaymentPage(reference: string) {
@@ -82,6 +85,74 @@ export const mockBank: BankClient = {
 
   async registerWebhook() {
     return { id: 'wh_mock', secret: 'mock' };
+  },
+
+  async createCarbonProject() {
+    await wait(500);
+    return { id: `cprj_${randomUUID().slice(0, 8)}`, status: 'registered', raw: { mock: true } };
+  },
+
+  async submitMrv(i) {
+    await wait(700);
+    const id = `mrv_${randomUUID().slice(0, 8)}`;
+    mrvs.set(id, { status: 'under_review', tco2e: i.tco2e });
+    return { id, status: 'under_review', raw: { mock: true } };
+  },
+
+  async getMrv(id) {
+    await wait(250);
+    const m = mrvs.get(id);
+    if (!m) throw new BankError(404, 'NOT_FOUND', 'Unknown MRV.');
+    return { id, status: m.status, creditsIssued: m.status === 'verified' ? m.tco2e : undefined, raw: { mock: true } };
+  },
+
+  async reviewMrv(id, approve) {
+    await wait(600);
+    const m = mrvs.get(id);
+    if (!m) throw new BankError(404, 'NOT_FOUND', 'Unknown MRV.');
+    m.status = approve ? 'verified' : 'rejected';
+    return { id, status: m.status, creditsIssued: approve ? m.tco2e : undefined, raw: { mock: true } };
+  },
+
+  async retireCredits(i) {
+    await wait(700);
+    const certificateId = `cert_${randomUUID().slice(0, 8)}`;
+    certs.set(certificateId, { ...i, at: new Date().toISOString() });
+    return { certificateId, quantity: i.quantity, serial: `FCR-NG-2026-${certificateId.slice(5, 11).toUpperCase()}`, raw: { mock: true } };
+  },
+
+  async getCertificate(id) {
+    await wait(300);
+    const c = certs.get(id);
+    if (!c) throw new BankError(404, 'NOT_FOUND', 'Unknown certificate.');
+    return { id, projectId: c.projectId, quantity: c.quantity, serial: `FCR-NG-2026-${id.slice(5, 11).toUpperCase()}`, beneficiary: c.beneficiary, reason: c.reason, retiredAt: c.at, raw: { mock: true } };
+  },
+
+  async applyLoan(i) {
+    await wait(900);
+    const id = `loan_${randomUUID().slice(0, 8)}`;
+    const rate = 4.5;
+    const fee = Math.round(i.amount * 0.01);
+    const repay = Math.round(i.amount * (1 + rate / 100));
+    const due = new Date(Date.now() + i.tenorDays * 86_400_000).toISOString().slice(0, 10);
+    loans.set(id, { status: 'offered' });
+    return { id, status: 'offered', principal: i.amount, interestRate: rate, tenorDays: i.tenorDays, fee, repaymentTotal: repay, dueDate: due, raw: { mock: true } };
+  },
+
+  async getLoan(id) {
+    return { id, status: loans.get(id)?.status ?? 'offered', raw: { mock: true } };
+  },
+
+  async acceptLoan(id) {
+    await wait(500);
+    loans.set(id, { status: 'accepted' });
+    return { id, status: 'accepted', raw: { mock: true } };
+  },
+
+  async disburseLoan(id) {
+    await wait(800);
+    loans.set(id, { status: 'disbursed' });
+    return { id, status: 'disbursed', raw: { mock: true } };
   },
 
   async listWebhooks() {

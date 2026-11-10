@@ -18,7 +18,7 @@ type StageKey = 'scan' | 'sell' | 'prove';
 const STAGES: { key: StageKey; n: number; label: string; icon: LucideIcon; waiting: string; kinds: Activity['kind'][] }[] = [
   { key: 'scan', n: 1, label: 'Scan', icon: ScanLine, waiting: 'Waiting for a carton', kinds: ['added'] },
   { key: 'sell', n: 2, label: 'Sell', icon: Tag, waiting: 'Waiting for a listing', kinds: ['listed', 'paid', 'donated'] },
-  { key: 'prove', n: 3, label: 'Prove', icon: BadgeCheck, waiting: 'Waiting for a handover', kinds: ['handed_over', 'paid_out', 'collected', 'shared'] },
+  { key: 'prove', n: 3, label: 'Prove', icon: BadgeCheck, waiting: 'Waiting for a handover', kinds: ['handed_over', 'paid_out', 'collected', 'shared', 'carbon'] },
 ];
 
 /**
@@ -134,7 +134,7 @@ function Stat({ label, note, tone, children }: { label: string; note?: string; t
   );
 }
 
-const KIND_ICON: Partial<Record<Activity['kind'], LucideIcon>> = { paid: ReceiptText, collected: Leaf, paid_out: Landmark };
+const KIND_ICON: Partial<Record<Activity['kind'], LucideIcon>> = { paid: ReceiptText, collected: Leaf, paid_out: Landmark, carbon: Leaf };
 
 function StageCard({ stage, event, active, done }: { stage: (typeof STAGES)[number]; event?: Activity; active: boolean; done: boolean }) {
   const Icon = (event && KIND_ICON[event.kind]) || stage.icon;

@@ -11,8 +11,8 @@ import { haptic } from '../../lib/haptics';
 import { exitSpring, spring } from '../../lib/motion';
 import { navigate } from '../../lib/router';
 
-const OUT_STEPS = [{ label: 'Connecting to Access Bank' }, { label: 'Opening secure checkout' }];
-const BACK_STEPS = [{ label: 'Back from Access Bank' }, { label: 'Verifying payment' }, { label: 'Confirmed' }];
+const OUT_STEPS = [{ label: 'Connecting to the bank' }, { label: 'Opening secure checkout' }];
+const BACK_STEPS = [{ label: 'Back from the bank' }, { label: 'Verifying payment' }, { label: 'Confirmed' }];
 
 /* ------------------------------------------------------------------ */
 /* Leaving: create the bank checkout, then hand over to the bank page   */
@@ -74,7 +74,7 @@ function Checkout({ input, total, onClose }: { input: OrderInput; total: number;
           <div className="mt-8">
             <ProgressSteps steps={OUT_STEPS} current={step} />
           </div>
-          <p className="t-caption mt-6 text-muted">You'll finish on Access Bank's secure page.</p>
+          <p className="t-caption mt-6 text-muted">You'll finish on the bank's secure page.</p>
           {step === 0 && (
             <Button variant="ghost" className="mt-4 self-start" onClick={cancel}>
               Cancel
@@ -190,7 +190,7 @@ function Receipt({ order }: { order: Order }) {
         <QrCode value={order.ref} size={196} label={`Handover code ${order.ref}`} />
         <p className="t-label mt-3 text-deep">Show at {order.fulfilment === 'pickup' ? 'pickup' : 'delivery'}</p>
       </motion.div>
-      <p className="t-caption mt-4 text-muted">Verified with Access Bank · sandbox</p>
+      <p className="t-caption mt-4 text-muted">Verified with the bank · sandbox</p>
       <div className="mt-auto w-full pt-6">
         <Button size="lg" block onClick={() => navigate(`/orders/${order.id}`, { replace: true, tab: true })}>
           Done
