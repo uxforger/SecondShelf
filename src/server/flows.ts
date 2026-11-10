@@ -3,7 +3,7 @@ import { ApiError, type BankStatement, type Fulfilment, type Order, type Payout 
 import { BUYER } from '../lib/mock/catalogue.ts';
 import { mockBank } from './bank/mock.ts';
 import { bank, BankError, DEMO_MODE, DISTRIBUTOR_ACCOUNT, PASSPORT_ACCOUNT } from './bank/index.ts';
-import { applyPoolTransfer, onCarbonEvent } from './carbon.ts';
+import { applyPoolTransfer, completeSale, onCarbonEvent } from './carbon.ts';
 import { onLoanEvent } from './loans.ts';
 import { merchantId, onMerchantEvent } from './merchant.ts';
 import { applyTransferEvent, enquire, registerResolver, send, type TransferTarget } from './transfers.ts';
@@ -218,6 +218,11 @@ export function firstDelivery(eventId: string, type: string): boolean {
 export async function handleEvent(type: string, data: Record<string, any>) {
   const reference: string | undefined = data?.reference ?? data?.payment_reference ?? data?.transfer_reference;
   if (type.startsWith('payment.') && reference) {
+    // Carbon credit sales: verify, then retire.
+    if (reference.startsWith('CC-')) {
+      if (type === 'payment.successful') await completeSale(reference).catch((e) => console.warn(`[hook] ${type} ${reference}: ${e.message}`));
+      return;
+    }
     await finalizePayment(reference).catch((e) => console.warn(`[hook] ${type} ${reference}: ${e.message}`));
     return;
   }

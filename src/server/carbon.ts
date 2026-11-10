@@ -566,7 +566,7 @@ export async function certificate(id: string): Promise<CarbonCertificate> {
       buyer: r.buyer ?? local?.buyer,
       reason: r.reason ?? local?.reason,
       retiredAt: r.retiredAt ?? local?.retiredAt,
-      pdfUrl: r.pdfUrl,
+      pdfUrl: r.pdfUrl && r.pdfUrl.startsWith('http') ? r.pdfUrl : undefined,
       source: 'registry',
     };
   } catch (e) {
