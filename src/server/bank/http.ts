@@ -1,4 +1,13 @@
+import { randomUUID } from 'node:crypto';
 import { BankError, type BankClient, type PaymentStatus, type StatementSummary, type TransferResult, type TransferStatus } from './types.ts';
+
+/** Synthetic sandbox fixtures (guide 5.4): individuals whose phone BVN verification returns. */
+const KYC: Record<string, { bvn: string; first: string; last: string; dob: string }> = {
+  '0123456789': { bvn: '22200000001', first: 'Adaeze', last: 'Okonkwo', dob: '1998-04-12' },
+  '0123456790': { bvn: '22200000002', first: 'Babatunde', last: 'Adeyemi', dob: '1985-09-30' },
+  '0123456791': { bvn: '22200000003', first: 'Musa', last: 'Abdullahi', dob: '1992-01-17' },
+  '0123456792': { bvn: '22200000004', first: 'Efosa', last: 'Osagie', dob: '2001-06-05' },
+};
 
 const BASE = process.env.BANK_API_BASE || 'http://bank-api.ingress-apisix.svc.cluster.local/v1';
 
@@ -153,6 +162,14 @@ export const httpBank: BankClient = {
       phone = holder.phone ?? holder.phone_number ?? holder.mobile ?? holder.customer_phone ?? holder.msisdn ?? r.phone ?? r.phone_number;
       // Field names only (never values) so a mismatch is easy to fix.
       if (!phone) console.log(`[bank] resolve returned fields: ${Object.keys(r).join(',')}${holder !== r ? ' / holder: ' + Object.keys(holder).join(',') : ''}`);
+    }
+    // Individuals: the phone on file comes back from BVN verification (sandbox fixtures, guide 5.4).
+    const kyc = KYC[accountNumber];
+    if (!phone && kyc) {
+      const v = await call('POST', '/identity/bvn/verify', { bvn: kyc.bvn, first_name: kyc.first, last_name: kyc.last, date_of_birth: kyc.dob, dob: kyc.dob }, randomUUID());
+      const who = (v.customer ?? v.holder ?? v.identity ?? v) as Json;
+      phone = who.phone ?? who.phone_number ?? who.mobile ?? who.msisdn ?? v.phone ?? v.phone_number;
+      if (!phone) console.log(`[bank] bvn verify returned fields: ${Object.keys(v).join(',')}${who !== v ? ' / ' + Object.keys(who).join(',') : ''}`);
     }
     const d = await call(
       'POST',

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { ApiError, type BankStatement, type Fulfilment, type Order, type Payout } from '../lib/api/types.ts';
 import { BUYER } from '../lib/mock/catalogue.ts';
-import { bank, BankError, DEMO_MODE, DISTRIBUTOR_ACCOUNT, SETTLEMENT_ACCOUNT, type TransferResult } from './bank/index.ts';
+import { bank, BankError, DEMO_MODE, DISTRIBUTOR_ACCOUNT, PASSPORT_ACCOUNT, SETTLEMENT_ACCOUNT, type TransferResult } from './bank/index.ts';
 import { kvGet, kvSet, now, sql } from './db.ts';
 import { apply, dryRun, getDb } from './state.ts';
 
@@ -265,16 +265,16 @@ function recordTransfer(o: Order, row: PayoutRow, res: TransferResult): Payout {
 /* ------------------------------------------------------------------ */
 
 export async function createPassportConsent() {
-  const c = await bank.createConsent(DISTRIBUTOR_ACCOUNT, randomUUID());
-  sql.prepare('INSERT OR REPLACE INTO consents (id, account_number, status, created_at) VALUES (?, ?, ?, ?)').run(c.id, DISTRIBUTOR_ACCOUNT, c.status, now());
-  return { consentId: c.id, accountNumber: DISTRIBUTOR_ACCOUNT };
+  const c = await bank.createConsent(PASSPORT_ACCOUNT, randomUUID());
+  sql.prepare('INSERT OR REPLACE INTO consents (id, account_number, status, created_at) VALUES (?, ?, ?, ?)').run(c.id, PASSPORT_ACCOUNT, c.status, now());
+  return { consentId: c.id, accountNumber: PASSPORT_ACCOUNT };
 }
 
 export async function authorisePassportConsent(consentId: string, otp: string): Promise<BankStatement> {
   if (!/^\d{6}$/.test(otp)) throw new ApiError('Enter the 6-digit code.');
   const a = await bank.authoriseConsent(consentId, otp);
   sql.prepare('UPDATE consents SET status = ? WHERE id = ?').run(a.status, consentId);
-  const s = await bank.statement(DISTRIBUTOR_ACCOUNT, consentId);
+  const s = await bank.statement(PASSPORT_ACCOUNT, consentId);
   const statement: BankStatement = { ...s, consentId, at: now() };
   apply({ type: 'passport/bank', at: statement.at, statement });
   return statement;
