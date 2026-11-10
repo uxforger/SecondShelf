@@ -43,6 +43,8 @@ spec:
             # Collections merchant. /merchants/onboard is not in the sandbox build yet, so this
             # is the sandbox's pre-provisioned merchant; see CHANGES.md.
             - { name: BANK_MERCHANT_ID, value: "mer_204" }
+            # The one carbon pool project (solar_replacing_diesel, as instructed by the organisers).
+            - { name: CARBON_PROJECT_ID, value: "prj_118" }
           # Team key (GATEWAY_KEY) comes from the pre-provisioned secret.
           envFrom:
             - secretRef: { name: huawei-gateway, optional: true }

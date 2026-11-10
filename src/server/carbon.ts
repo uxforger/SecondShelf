@@ -113,7 +113,9 @@ export async function ensureProject(): Promise<CarbonState> {
   const existing = getDb().carbon;
   if (existing?.projectId && existing.registry === mode) return { ...existing, projectName: PROJECT_NAME, poolName: POOL_NAME, sales: existing.sales ?? [] };
 
-  const stored = kvGet(POOL_KEY);
+  // The one pool project, pinned so a pod that lost its disk never registers another.
+  const pinned = process.env.CARBON_PROJECT_ID;
+  const stored = kvGet(POOL_KEY) ?? (pinned ? JSON.stringify({ id: pinned, accountName: process.env.CARBON_POOL_NAME || 'AREWA SOLAR CO-OPERATIVE SOCIETY' }) : null);
   if (stored && mode === 'sandbox') {
     const { id, accountName } = JSON.parse(stored) as { id: string; accountName?: string };
     const carbon = fresh({ registry: 'sandbox', projectId: id, payoutAccountName: accountName });
