@@ -237,7 +237,7 @@ export const httpBank: BankClient = {
     const d = await call(
       'POST',
       '/carbon/projects',
-      { name: i.name, methodology: i.methodology, location: i.location, country: 'NG', description: i.description, project_type: 'food_waste_avoidance', sector: 'waste' },
+      { name: i.name, type: process.env.CARBON_PROJECT_TYPE || 'food_waste', methodology: i.methodology, location: i.location, country: 'NG', description: i.description, sector: 'waste' },
       i.idempotencyKey,
     );
     shape('carbon project', d);

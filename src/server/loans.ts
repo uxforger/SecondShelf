@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { ApiError, type Loan, type LoanStatus } from '../lib/api/types.ts';
 import { metrics } from '../lib/selectors.ts';
-import { bank, DISTRIBUTOR_ACCOUNT } from './bank/index.ts';
-import { kvGet, kvSet, now } from './db.ts';
+import { bank, BankError, DISTRIBUTOR_ACCOUNT } from './bank/index.ts';
+import { kvGet, kvSet, now, sql } from './db.ts';
 import { apply, getDb } from './state.ts';
 
 /**
@@ -28,6 +28,20 @@ function status(s: string): LoanStatus {
   return 'offered';
 }
 
+/**
+ * Run a record-creating bank call under a stored Idempotency-Key.
+ * Timeout: keep the key (a retry replays, never duplicates).
+ * Definite rejection (4xx): drop the key so a corrected request isn't a 409.
+ */
+async function withKey<T>(name: string, fn: (key: string) => Promise<T>): Promise<T> {
+  try {
+    return await fn(keyFor(name));
+  } catch (e) {
+    if (e instanceof BankError && !e.isTimeout && e.httpStatus >= 400 && e.httpStatus < 500) sql.prepare('DELETE FROM kv WHERE key = ?').run(name);
+    throw e;
+  }
+}
+
 function save(loan: Loan, note?: { title: string; detail?: string; amount?: number }) {
   apply({ type: 'loan/set', at: now(), loan, note });
 }
@@ -46,8 +60,9 @@ export async function applyForLoan(): Promise<Loan> {
   if (current && ['offered', 'accepted', 'disbursed'].includes(current.status)) return current;
   const amount = offerAmount();
   // One key per attempt; kept until a decision so a retry replays the same application.
-  const idem = keyFor('loan_apply_idem');
-  const r = await bank.applyLoan({ accountNumber: DISTRIBUTOR_ACCOUNT, amount, tenorDays: TENOR_DAYS, purpose: 'Inventory: restock fast-moving packaged food', idempotencyKey: idem });
+  const r = await withKey('loan_apply_idem', (idempotencyKey) =>
+    bank.applyLoan({ accountNumber: DISTRIBUTOR_ACCOUNT, amount, tenorDays: TENOR_DAYS, purpose: 'Inventory: restock fast-moving packaged food', idempotencyKey }),
+  );
   const loan: Loan = {
     id: r.id,
     status: status(r.status),
@@ -75,7 +90,7 @@ function mine(id: string): Loan {
 export async function acceptLoan(id: string): Promise<Loan> {
   const l = mine(id);
   if (l.status !== 'offered') return l;
-  const r = await bank.acceptLoan(id, keyFor(`loan_accept_${id}`));
+  const r = await withKey(`loan_accept_${id}`, (k) => bank.acceptLoan(id, k));
   const next: Loan = { ...l, status: status(r.status) === 'offered' ? 'accepted' : status(r.status), acceptedAt: now(), repaymentTotal: r.repaymentTotal ?? l.repaymentTotal, dueDate: r.dueDate ?? l.dueDate };
   save(next, { title: 'Loan offer accepted', amount: next.principal });
   return next;
@@ -85,7 +100,7 @@ export async function disburseLoan(id: string): Promise<Loan> {
   const l = mine(id);
   if (l.status === 'disbursed') return l;
   if (l.status !== 'accepted') throw new ApiError('Accept the offer first.');
-  const r = await bank.disburseLoan(id, keyFor(`loan_disburse_${id}`));
+  const r = await withKey(`loan_disburse_${id}`, (k) => bank.disburseLoan(id, k));
   const s = status(r.status);
   const next: Loan = { ...l, status: s === 'accepted' || s === 'offered' ? 'disbursed' : s, disbursedAt: now(), dueDate: r.dueDate ?? l.dueDate, repaymentTotal: r.repaymentTotal ?? l.repaymentTotal };
   save(next, { title: 'Stock loan disbursed', detail: `To ···${l.accountNumber.slice(-4)}`, amount: next.principal });

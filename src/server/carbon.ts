@@ -4,7 +4,7 @@ import { avoidedCo2e, DRY_SHARE, transportFor } from '../lib/carbon.ts';
 import { shortDate } from '../lib/format.ts';
 import { FOOD_BANK } from '../lib/mock/catalogue.ts';
 import { bank, BankError, DISTRIBUTOR_ACCOUNT } from './bank/index.ts';
-import { kvGet, kvSet, now } from './db.ts';
+import { kvGet, kvSet, now, sql } from './db.ts';
 import { apply, getDb } from './state.ts';
 import { enquire, registerResolver, send, type TransferTarget } from './transfers.ts';
 
@@ -34,6 +34,20 @@ function keyFor(name: string) {
   return k;
 }
 
+/**
+ * Run a record-creating bank call under a stored Idempotency-Key.
+ * Timeout: keep the key (a retry replays, never duplicates).
+ * Definite rejection (4xx): drop the key so a corrected request isn't a 409.
+ */
+async function withKey<T>(name: string, fn: (key: string) => Promise<T>): Promise<T> {
+  try {
+    return await fn(keyFor(name));
+  } catch (e) {
+    if (e instanceof BankError && !e.isTimeout && e.httpStatus >= 400 && e.httpStatus < 500) sql.prepare('DELETE FROM kv WHERE key = ?').run(name);
+    throw e;
+  }
+}
+
 const t3 = (n: number) => Math.round(n * 1000) / 1000;
 
 /* ---------------- Project ---------------- */
@@ -41,13 +55,15 @@ const t3 = (n: number) => Math.round(n * 1000) / 1000;
 export async function ensureProject(): Promise<CarbonState> {
   const existing = getDb().carbon;
   if (existing?.projectId) return existing;
-  const p = await bank.createCarbonProject({
-    name: PROJECT_NAME,
-    methodology: METHODOLOGY,
-    location: 'Lagos, Nigeria',
-    description: 'Packaged food sold or donated before expiry instead of being destroyed. Grouped across SecondShelf distributors.',
-    idempotencyKey: keyFor('carbon_project_idem'),
-  });
+  const p = await withKey('carbon_project_idem', (idempotencyKey) =>
+    bank.createCarbonProject({
+      name: PROJECT_NAME,
+      methodology: METHODOLOGY,
+      location: 'Lagos, Nigeria',
+      description: 'Packaged food sold or donated before expiry instead of being destroyed. Grouped across SecondShelf distributors.',
+      idempotencyKey,
+    }),
+  );
   const carbon: CarbonState = { projectId: p.id, projectName: PROJECT_NAME, methodology: METHODOLOGY, createdAt: now(), submissions: [], retirements: [] };
   save(carbon, { title: 'Carbon project registered', detail: `${PROJECT_NAME} · ${METHODOLOGY}` });
   return carbon;
@@ -128,9 +144,9 @@ export async function submitMrv(): Promise<CarbonSubmission> {
     `${foodKg} kg packaged food sold or donated before expiry from lines with past destruction records. ` +
     `VM0046: net tonnes × dry share × 2.285 × (1 − 0.12) − van transport = ${tco2e} tCO2e.`;
   // Same items → same key, so a retry after a timeout replays instead of double-reporting.
-  const idem = keyFor(`mrv_idem_${createHash('sha256').update(items.map((i) => i.id).join(',')).digest('hex').slice(0, 24)}`);
+  const idemName = `mrv_idem_${createHash('sha256').update(items.map((i) => i.id).join(',')).digest('hex').slice(0, 24)}`;
 
-  const r = await bank.submitMrv({ projectId: carbon.projectId, periodStart, periodEnd, tco2e, evidenceSummary: evidence, items, idempotencyKey: idem });
+  const r = await withKey(idemName, (idempotencyKey) => bank.submitMrv({ projectId: carbon.projectId, periodStart, periodEnd, tco2e, evidenceSummary: evidence, items, idempotencyKey }));
   const sub: CarbonSubmission = {
     mrvId: r.id,
     status: mrvStatus(r.status),
@@ -178,7 +194,7 @@ export async function refreshMrv(mrvId: string) {
 
 /** Sandbox only: we act as the independent verifier. Labelled as such in the UI. */
 export async function approveMrv(mrvId: string) {
-  const r = await bank.reviewMrv(mrvId, true, keyFor(`mrv_review_${mrvId}`));
+  const r = await withKey(`mrv_review_${mrvId}`, (k) => bank.reviewMrv(mrvId, true, k));
   const status = mrvStatus(r.status);
   if (status === 'verified') {
     const sub = getDb().carbon?.submissions.find((s) => s.mrvId === mrvId);
@@ -200,7 +216,7 @@ export async function retire(mrvId: string) {
   const quantity = t3(sub.creditsIssued ?? sub.tco2e);
   const beneficiary = 'Ade Foods, Mushin';
   const reason = `Food rescued before expiry, ${shortDate(sub.periodStart)} to ${shortDate(sub.periodEnd)} ${sub.periodEnd.slice(0, 4)}`;
-  const r = await bank.retireCredits({ projectId: c.projectId, mrvId, quantity, beneficiary, reason, idempotencyKey: keyFor(`retire_${mrvId}`) });
+  const r = await withKey(`retire_${mrvId}`, (idempotencyKey) => bank.retireCredits({ projectId: c.projectId, mrvId, quantity, beneficiary, reason, idempotencyKey }));
   const valueNaira = Math.round(r.valueNaira ?? quantity * PRICE_NGN);
   const retirement = {
     certificateId: r.certificateId,
