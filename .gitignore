@@ -9,3 +9,16 @@ coverage/
 
 # Local UI captures (regenerate with Playwright)
 screenshots/
+
+# Secrets: never commit
+team19.yml
+team19.yaml
+*.kubeconfig
+kubeconfig*
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+docs/forge-sandbox-guide.pdf
