@@ -36,6 +36,18 @@ export function Passport({ session }: { session: Session }) {
   const [otp, setOtp] = useState('');
   const [otpError, setOtpError] = useState<string | null>(null);
   const statement = db.passportStatement;
+  const [revoking, setRevoking] = useState(false);
+  const revoke = async () => {
+    setRevoking(true);
+    try {
+      await api.revokePassportConsent();
+      toast('Bank access revoked', 'success');
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : 'Could not reach the bank.', 'error');
+    } finally {
+      setRevoking(false);
+    }
+  };
 
   const share = async () => {
     setSharing('requesting');
@@ -114,7 +126,7 @@ export function Passport({ session }: { session: Session }) {
             </div>
           </Card>
 
-          {statement && (
+          {statement && !statement.revokedAt && (
             <Card className="p-5 lg:p-6">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="t-heading text-deep">{statement.source === 'simulated' ? 'Bank statement' : 'Bank-verified'}</h2>
@@ -137,6 +149,9 @@ export function Passport({ session }: { session: Session }) {
                   <dd className="num text-[1.125rem] font-semibold text-deep">{statement.transactions}</dd>
                 </div>
               </dl>
+              <Button variant="ghost" size="sm" className="-ml-3 mt-3" loading={revoking} loadingLabel="Revoking" onClick={revoke}>
+                Stop sharing
+              </Button>
             </Card>
           )}
 

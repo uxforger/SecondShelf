@@ -1,5 +1,19 @@
 import { BankError, type BankClient, type PaymentStatus, type StatementSummary, type TransferResult, type TransferStatus } from './types.ts';
 
+/** Holder phones on file (spec v2 test data), needed for open-banking consent. */
+const HOLDER_PHONE: Record<string, string> = {
+  '0123456789': '+2348031234501',
+  '0123456790': '+2348051234502',
+  '0123456791': '+2348061234503',
+  '0123456792': '+2348071234504',
+  '0123456793': '+2348091234505',
+};
+
+/** Seeded history is October 2026; read that month (STATEMENT_FROM/TO to override). */
+function statementPeriod() {
+  return { from: process.env.STATEMENT_FROM || '2026-10-01', to: process.env.STATEMENT_TO || '2026-10-31' };
+}
+
 const BASE = process.env.BANK_API_BASE || 'http://bank-api.ingress-apisix.svc.cluster.local/v1';
 
 /** Stay under the team's 60 calls/minute (shared with Huawei MaaS). */
@@ -77,7 +91,7 @@ function toLoan(d: Json) {
   const decision = String(d.decision ?? '').toLowerCase();
   return {
     id: String(d.loan_id ?? d.id ?? d.application_id),
-    status: decision === 'declined' ? 'declined' : String(d.status ?? 'offered').toLowerCase(),
+    status: decision === 'declined' || decision === 'referred' ? 'declined' : String(d.status ?? 'offered').toLowerCase(),
     principal: num(offer.approved_amount ?? offer.principal ?? offer.amount),
     // The sandbox sends a fraction (0.03 = 3%); show a percentage.
     interestRate: pct(num(offer.interest_rate_monthly ?? offer.interest_rate ?? offer.rate)),
@@ -87,6 +101,11 @@ function toLoan(d: Json) {
     repaymentTotal: num(offer.total_repayable ?? offer.total_repayment ?? offer.repayment_amount),
     dueDate: typeof next === 'string' ? next : (next?.due_date ?? next?.date ?? offer.due_date ?? offer.maturity_date),
     creditScore: num(offer.credit_score),
+    decision: d.decision ? String(d.decision).toLowerCase() : undefined,
+    requestedAmount: num(offer.requested_amount),
+    schedule: Array.isArray(offer.repayment_schedule)
+      ? (offer.repayment_schedule as Json[]).map((x) => ({ instalment: Number(x.instalment), dueDate: String(x.due_date), amount: Number(x.amount) }))
+      : undefined,
     reason: d.decline_reason ?? d.reason,
     raw: d,
   };
@@ -186,45 +205,54 @@ export const httpBank: BankClient = {
   },
 
   async createConsent(accountNumber, idempotencyKey) {
-    // The bank checks this against the holder's phone on file. It isn't in the
-    // participant guide, so it's configured (CONSENT_PHONE); see CHANGES.md.
-    const phone = process.env.CONSENT_PHONE;
+    // Spec v2: the holder's phone on file (test data), third party, scopes and a period.
+    const phone = process.env.CONSENT_PHONE || HOLDER_PHONE[accountNumber];
     if (!phone) throw new BankError(422, 'CONSENT_PHONE_MISSING', 'Consent phone not configured.');
+    const { from, to } = statementPeriod();
     const d = await call(
       'POST',
       '/open-banking/consents',
       {
         account_number: accountNumber,
-        // Synthetic contact for the sandbox OTP; no real personal data.
         customer_phone: phone,
-        scopes: ['accounts', 'balance', 'statement'],
-        permissions: ['accounts', 'balance', 'statement'],
-        purpose: 'SecondShelf Business Passport',
+        third_party: { name: 'SecondShelf (Team 19)', purpose: 'Business Passport and stock-loan scoring' },
+        scopes: ['accounts:read', 'balance:read', 'transactions:read'],
+        data_from: from,
+        data_to: to,
+        expires_in_days: 30,
       },
       idempotencyKey,
     );
-    return { id: d.id ?? d.consent_id, status: d.status ?? 'pending' };
+    return { id: String(d.consent_id ?? d.id), status: String(d.status ?? 'awaiting_authorisation') };
   },
 
   async authoriseConsent(id, otp) {
     const d = await call('POST', `/open-banking/consents/${encodeURIComponent(id)}/authorise`, { otp });
-    return { id: d.id ?? id, status: d.status ?? 'authorised' };
+    return { id: String(d.consent_id ?? id), status: String(d.status ?? 'active') };
+  },
+
+  async revokeConsent(id) {
+    const key = process.env.GATEWAY_KEY!;
+    await takeSlot();
+    const res = await fetch(`${BASE}/open-banking/consents/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'x-api-key': key }, signal: AbortSignal.timeout(32_000) });
+    const json = (await res.json().catch(() => null)) as Json | null;
+    log('DELETE', '/open-banking/consents/{id}', res.status, json?.request_id, json?.error?.code);
+    if (!res.ok && res.status !== 404) throw new BankError(res.status, json?.error?.code ?? `HTTP_${res.status}`, json?.error?.message ?? 'Could not revoke.', json?.request_id);
   },
 
   async statement(accountNumber, consentId) {
-    const d = await call('GET', `/open-banking/accounts/${accountNumber}/statement?consent_id=${encodeURIComponent(consentId)}&per_page=100`);
-    const list: Json[] = Array.isArray(d) ? d : (d.transactions ?? d.items ?? d.entries ?? []);
-    const summary: StatementSummary = { accountNumber, accountName: d.account_name, transactions: list.length, credits: 0, debits: 0 };
-    for (const t of list) {
-      const amount = Math.abs(Number(t.amount ?? 0));
-      const dir = String(t.type ?? t.direction ?? t.entry_type ?? '').toLowerCase();
-      if (dir.startsWith('c') || Number(t.amount) > 0 && !dir.startsWith('d')) summary.credits += amount;
-      else summary.debits += amount;
-      const at = t.date ?? t.created_at ?? t.timestamp;
-      if (at && (!summary.from || at < summary.from)) summary.from = at;
-      if (at && (!summary.to || at > summary.to)) summary.to = at;
-    }
-    return summary;
+    const { from, to } = statementPeriod();
+    const d = await call('GET', `/open-banking/accounts/${accountNumber}/statement?consent_id=${encodeURIComponent(consentId)}&from=${from}&to=${to}`);
+    const list: Json[] = Array.isArray(d.transactions) ? d.transactions : [];
+    return {
+      accountNumber,
+      accountName: d.account_name,
+      transactions: list.length,
+      credits: Number(d.total_credits ?? list.reduce((n, t) => n + Number(t.credit ?? 0), 0)),
+      debits: Number(d.total_debits ?? list.reduce((n, t) => n + Number(t.debit ?? 0), 0)),
+      from: d.period?.from ?? from,
+      to: d.period?.to ?? to,
+    };
   },
 
   async listWebhooks() {
@@ -244,11 +272,25 @@ export const httpBank: BankClient = {
     const d = await call(
       'POST',
       '/carbon/projects',
-      { name: i.name, type: process.env.CARBON_PROJECT_TYPE || 'food_waste_avoidance', methodology: i.methodology, location: i.location, country: 'NG', description: i.description, sector: 'waste' },
+      {
+        // Spec v2 shape. Honest type only: never solar, cookstoves or trees.
+        name: i.name,
+        type: process.env.CARBON_PROJECT_TYPE || 'food_waste_diversion',
+        location: { state: 'Lagos', lga: 'Mushin', lat: 6.53, lng: 3.35 },
+        owner: {
+          name: 'Iya Bisi Foods Enterprises',
+          contact_name: 'Iya Bisi',
+          phone: '+2348051234507',
+          payout_account: '8051234507',
+          bank_code: '090405',
+        },
+        methodology: 'VM0046 food loss and waste',
+        description: i.description,
+      },
       i.idempotencyKey,
     );
     shape('carbon project', d);
-    return { id: String(d.id ?? d.project_id), status: String(d.status ?? 'registered'), raw: d };
+    return { id: String(d.project_id ?? d.id), status: String(d.status ?? 'registered'), raw: d };
   },
 
   async submitMrv(i) {
@@ -323,7 +365,15 @@ export const httpBank: BankClient = {
     const d = await call(
       'POST',
       '/loans/applications',
-      { applicant_account: i.accountNumber, account_number: i.accountNumber, bvn: i.bvn, amount: Number(i.amount.toFixed(2)), tenor_months: Math.min(12, Math.max(1, Math.round(i.tenorDays / 30))), purpose: i.purpose, product: 'inventory' },
+      {
+        applicant_account: i.accountNumber,
+        ...(i.bvn ? { bvn: i.bvn } : {}),
+        ...(i.rcNumber ? { rc_number: i.rcNumber } : {}),
+        amount: Number(i.amount.toFixed(2)),
+        tenor_months: Math.min(12, Math.max(1, Math.round(i.tenorDays / 30))),
+        purpose: i.purpose,
+        ...(i.consentId ? { consent_id: i.consentId } : {}),
+      },
       i.idempotencyKey,
     );
     shape('loan apply', d);

@@ -20,6 +20,7 @@ export type Action =
   // Server-only: set from verified bank responses, never accepted from a browser.
   | { type: 'order/payout'; at: string; orderId: string; payout: Payout }
   | { type: 'passport/bank'; at: string; statement: BankStatement }
+  | { type: 'passport/revoked'; at: string }
   | { type: 'carbon/set'; at: string; carbon: CarbonState; note?: { title: string; detail?: string; amount?: number } }
   | { type: 'loan/set'; at: string; loan: Loan; note?: { title: string; detail?: string; amount?: number } };
 
@@ -261,6 +262,16 @@ export function reduce(db: Db, action: Action): Db {
           detail: `${action.statement.transactions} bank transactions read with consent`,
           businessIds: ['biz-ade'],
         }),
+      };
+    }
+
+    case 'passport/revoked': {
+      if (!db.passportStatement) return db;
+      return {
+        ...db,
+        version,
+        passportStatement: { ...db.passportStatement, revokedAt: action.at },
+        activity: withActivity(db, { at: action.at, kind: 'shared', title: 'Bank access revoked', detail: 'Open-banking consent ended', businessIds: ['biz-ade'] }),
       };
     }
 

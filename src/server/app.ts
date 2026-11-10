@@ -8,6 +8,7 @@ import { mockPaymentPage, mockSettle } from './bank/mock.ts';
 import {
   authorisePassportConsent,
   createPassportConsent,
+  revokePassportConsent,
   enquirePayout,
   ensureWebhook,
   finalizePayment,
@@ -18,7 +19,7 @@ import {
   webhookSecret,
 } from './flows.ts';
 import { verifySignature } from './signature.ts';
-import { approveMrv, certificate, enquireShare, ensureProject, preview as carbonPreview, refreshMrv, retire, sendShare, submitMrv } from './carbon.ts';
+import { approveMrv, attemptRegistration, certificate, enquireShare, ensureProject, registrationResult, preview as carbonPreview, refreshMrv, retire, sendShare, submitMrv } from './carbon.ts';
 import { acceptLoan, applyForLoan, disburseLoan, offerAmount } from './loans.ts';
 import { apply, getDb, onChange, resetAll } from './state.ts';
 
@@ -145,6 +146,7 @@ export function createApp(opts: { staticDir?: string } = {}) {
     '/api/passport/consent',
     wrap(async (_req, res) => res.json(await createPassportConsent())),
   );
+  app.post('/api/passport/revoke', wrap(async (_req, res) => res.json(await revokePassportConsent())));
   app.post(
     '/api/passport/consent/:id/authorise',
     wrap(async (req, res) => res.json(await authorisePassportConsent(String(req.params.id), String(req.body?.otp ?? '')))),
@@ -153,6 +155,9 @@ export function createApp(opts: { staticDir?: string } = {}) {
   // 5a. Carbon registry
   app.get('/api/carbon/preview', (_req, res) => res.json(carbonPreview()));
   app.post('/api/carbon/project', wrap(async (_req, res) => res.json(await ensureProject())));
+  // One honest registration attempt with the sandbox registry; the result is stored, never retried.
+  app.post('/api/carbon/register', wrap(async (_req, res) => res.json(await attemptRegistration())));
+  app.get('/api/carbon/registration', (_req, res) => res.json({ result: registrationResult() }));
   app.post('/api/carbon/mrv', wrap(async (_req, res) => res.json(await submitMrv())));
   app.post('/api/carbon/mrv/:id/refresh', wrap(async (req, res) => res.json((await refreshMrv(String(req.params.id))) ?? null)));
   app.post('/api/carbon/mrv/:id/approve', wrap(async (req, res) => res.json((await approveMrv(String(req.params.id))) ?? null)));

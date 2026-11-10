@@ -78,6 +78,11 @@ export const mockBank: BankClient = {
     return { id, status: 'authorised' };
   },
 
+  async revokeConsent(id) {
+    await wait(300);
+    consents.set(id, { status: 'revoked' });
+  },
+
   async statement(accountNumber) {
     await wait(700);
     return { accountNumber, accountName: 'Mama Nkechi Provisions Ltd', transactions: 46, credits: 8_420_000, debits: 6_115_500, from: '2026-10-01', to: '2026-10-31' };

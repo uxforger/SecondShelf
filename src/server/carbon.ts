@@ -63,31 +63,55 @@ const t3 = (n: number) => Math.round(n * 1000) / 1000;
 
 /* ---------------- Project ---------------- */
 
+const REG_KEY = 'carbon_registration';
+
+/**
+ * One honest attempt to register with the sandbox registry
+ * (type food_waste_diversion). The outcome is stored and never retried:
+ * a rejected type is a question for the organisers, not something to guess.
+ */
+export async function attemptRegistration(): Promise<{ result: string; projectId?: string }> {
+  const prior = kvGet(REG_KEY);
+  if (prior) return { result: prior };
+  if (bank.mode === 'mock') return { result: 'mock' };
+  try {
+    const p = await bank.createCarbonProject({
+      name: PROJECT_NAME,
+      methodology: 'VM0046 food loss and waste',
+      location: 'Lagos, Nigeria',
+      description: 'Packaged food sold or donated before expiry instead of being destroyed. Grouped across SecondShelf distributors.',
+      idempotencyKey: keyFor('carbon_project_idem'),
+    });
+    kvSet(REG_KEY, `ok:${p.id}`);
+    const carbon: CarbonState = { registry: 'sandbox', projectId: p.id, projectName: PROJECT_NAME, methodology: METHODOLOGY, createdAt: now(), submissions: [], retirements: [] };
+    save(carbon, { title: 'Carbon project registered', detail: `${PROJECT_NAME} · Forge Carbon Registry` });
+    return { result: `ok:${p.id}`, projectId: p.id };
+  } catch (e) {
+    if (!(e instanceof BankError) || e.isTimeout) throw e; // unknown outcome: don't record, don't resend blindly
+    const note = `rejected:${e.code}${e.field ? ` field=${e.field}` : ''} ${e.message}`;
+    kvSet(REG_KEY, note);
+    console.warn(`[carbon] registration ${note}`);
+    return { result: note };
+  }
+}
+
 export async function ensureProject(): Promise<CarbonState> {
   const existing = getDb().carbon;
   if (existing?.projectId) return existing;
-  const input = (idempotencyKey: string) => ({
-    name: PROJECT_NAME,
-    methodology: METHODOLOGY,
-    location: 'Lagos, Nigeria',
-    description: 'Packaged food sold or donated before expiry instead of being destroyed. Grouped across SecondShelf distributors.',
-    idempotencyKey,
-  });
-  let where: 'sandbox' | 'simulated' = bank.mode === 'mock' ? 'simulated' : 'sandbox';
-  let p: { id: string };
-  try {
-    p = await withKey('carbon_project_idem', (k) => bank.createCarbonProject(input(k)));
-  } catch (e) {
-    const typeProblem = e instanceof BankError && e.field === 'type' && !process.env.CARBON_PROJECT_TYPE;
-    if (!typeProblem) throw e;
-    console.warn('[carbon] sandbox registry has no food-waste project type; using the simulated registry');
-    where = 'simulated';
-    p = await mockBank.createCarbonProject(input(randomUUID()));
+  const reg = kvGet(REG_KEY);
+  if (reg?.startsWith('ok:')) {
+    const carbon: CarbonState = { registry: 'sandbox', projectId: reg.slice(3), projectName: PROJECT_NAME, methodology: METHODOLOGY, createdAt: now(), submissions: [], retirements: [] };
+    save(carbon);
+    return carbon;
   }
-  const carbon: CarbonState = { registry: where, projectId: p.id, projectName: PROJECT_NAME, methodology: METHODOLOGY, createdAt: now(), submissions: [], retirements: [] };
-  save(carbon, { title: 'Carbon project registered', detail: `${PROJECT_NAME} · ${METHODOLOGY}` });
+  // Not registered with the sandbox registry: run on the labelled simulated registry.
+  const p = await mockBank.createCarbonProject({ name: PROJECT_NAME, methodology: METHODOLOGY, location: 'Lagos, Nigeria', description: '', idempotencyKey: randomUUID() });
+  const carbon: CarbonState = { registry: 'simulated', projectId: p.id, projectName: PROJECT_NAME, methodology: METHODOLOGY, createdAt: now(), submissions: [], retirements: [] };
+  save(carbon, { title: 'Carbon project registered', detail: `${PROJECT_NAME} · simulated registry` });
   return carbon;
 }
+
+export const registrationResult = () => kvGet(REG_KEY);
 
 /* ---------------- What can be reported ---------------- */
 

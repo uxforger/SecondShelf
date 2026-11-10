@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { ApiError, type Loan, type LoanStatus } from '../lib/api/types.ts';
 import { metrics } from '../lib/selectors.ts';
-import { bank, BankError, LOAN_ACCOUNT, LOAN_BVN } from './bank/index.ts';
+import { bank, BankError, LOAN_ACCOUNT, LOAN_BVN, LOAN_RC } from './bank/index.ts';
 import { kvGet, kvSet, now, sql } from './db.ts';
 import { apply, getDb } from './state.ts';
 
@@ -12,11 +12,11 @@ import { apply, getDb } from './state.ts';
 
 const TENOR_DAYS = 30;
 
-/** 30% of verified sales in 90 days, ₦100k to ₦1.5m, rounded to ₦10k. */
+/** 30% of verified sales in 90 days, ₦100k to ₦950k (above ₦1m the bank refers), rounded to ₦10k. */
 export function offerAmount() {
   const m = metrics(getDb(), 'biz-ade');
   const raw = m.verifiedSales90 * 0.3;
-  return Math.max(100_000, Math.min(1_500_000, Math.round(raw / 10_000) * 10_000));
+  return Math.max(100_000, Math.min(950_000, Math.round(raw / 10_000) * 10_000));
 }
 
 function status(s: string): LoanStatus {
@@ -42,6 +42,12 @@ async function withKey<T>(name: string, fn: (key: string) => Promise<T>): Promis
   }
 }
 
+/** The Passport's live open-banking consent, if any, lets the bank score from the statement. */
+function activeConsent(): string | undefined {
+  const st = getDb().passportStatement;
+  return st && st.source !== 'simulated' && !st.revokedAt ? st.consentId : undefined;
+}
+
 function save(loan: Loan, note?: { title: string; detail?: string; amount?: number }) {
   apply({ type: 'loan/set', at: now(), loan, note });
 }
@@ -61,7 +67,7 @@ export async function applyForLoan(): Promise<Loan> {
   const amount = offerAmount();
   // One key per attempt; kept until a decision so a retry replays the same application.
   const r = await withKey('loan_apply_idem', (idempotencyKey) =>
-    bank.applyLoan({ accountNumber: LOAN_ACCOUNT, bvn: LOAN_BVN, amount, tenorDays: TENOR_DAYS, purpose: 'Inventory: restock fast-moving packaged food', idempotencyKey }),
+    bank.applyLoan({ accountNumber: LOAN_ACCOUNT, bvn: LOAN_BVN || undefined, rcNumber: LOAN_RC || undefined, consentId: activeConsent(), amount, tenorDays: TENOR_DAYS, purpose: 'Inventory: restock fast-moving packaged food', idempotencyKey }),
   );
   const loan: Loan = {
     id: r.id,
@@ -74,12 +80,15 @@ export async function applyForLoan(): Promise<Loan> {
     repaymentTotal: r.repaymentTotal,
     dueDate: r.dueDate,
     creditScore: r.creditScore,
+    decision: r.decision,
+    requestedAmount: r.requestedAmount,
+    schedule: r.schedule,
     accountNumber: LOAN_ACCOUNT,
     appliedAt: now(),
     declineReason: r.reason,
   };
   if (loan.status === 'declined') kvSet('loan_apply_idem', randomUUID());
-  save(loan, loan.status === 'declined' ? { title: 'Loan declined', detail: r.reason } : { title: 'Stock loan offered', detail: `${loan.tenorDays} days`, amount: loan.principal });
+  save(loan, loan.status === 'declined' ? { title: r.decision === 'referred' ? 'Loan referred' : 'Loan declined', detail: r.reason } : { title: 'Stock loan offered', detail: `${loan.tenorDays} days`, amount: loan.principal });
   return loan;
 }
 

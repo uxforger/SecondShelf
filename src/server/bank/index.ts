@@ -18,6 +18,8 @@ export const DISTRIBUTOR_ACCOUNT = process.env.DISTRIBUTOR_ACCOUNT || '012345679
 export const PASSPORT_ACCOUNT = process.env.PASSPORT_ACCOUNT || DISTRIBUTOR_ACCOUNT;
 /** Loans need an individual with a BVN: Ade Foods' owner, Babatunde Olumide Adeyemi (sandbox fixture). */
 export const LOAN_ACCOUNT = process.env.LOAN_ACCOUNT || '0123456790';
-export const LOAN_BVN = process.env.LOAN_BVN || '22200000002';
+export const LOAN_BVN = process.env.LOAN_BVN ?? '22200000002';
+/** For a corporate applicant (spec v2 lists RC 1849302 for Mama Nkechi Provisions). */
+export const LOAN_RC = process.env.LOAN_RC || '';
 
 export * from './types.ts';

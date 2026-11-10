@@ -181,6 +181,15 @@ export async function createPassportConsent() {
   return { consentId: c.id, accountNumber: PASSPORT_ACCOUNT };
 }
 
+export async function revokePassportConsent() {
+  const s = getDb().passportStatement;
+  if (!s) return null;
+  if (s.source !== 'simulated') await bank.revokeConsent(s.consentId);
+  sql.prepare('UPDATE consents SET status = ? WHERE id = ?').run('revoked', s.consentId);
+  apply({ type: 'passport/revoked', at: now() });
+  return { revoked: true };
+}
+
 export async function authorisePassportConsent(consentId: string, otp: string): Promise<BankStatement> {
   if (!/^\d{6}$/.test(otp)) throw new ApiError('Enter the 6-digit code.');
   const a = await consentBank.authoriseConsent(consentId, otp);

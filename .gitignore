@@ -30,3 +30,5 @@ dist-server/
 # Hosting-tool workspace
 .aistudio/
 metadata.json
+docs/Forge-*.pdf
+docs/forge-sandbox-api-spec-v2.pdf

@@ -94,6 +94,7 @@ export interface BankStatement {
   from?: string;
   to?: string;
   at: string;
+  revokedAt?: string;
 }
 export type Fulfilment = 'pickup' | 'delivery';
 
@@ -232,6 +233,10 @@ export interface Loan {
   repaymentTotal?: number;
   dueDate?: string;
   creditScore?: number;
+  /** approved | approved_reduced | declined | referred */
+  decision?: string;
+  requestedAmount?: number;
+  schedule?: { instalment: number; dueDate: string; amount: number }[];
   accountNumber: string;
   appliedAt: string;
   acceptedAt?: string;
@@ -321,6 +326,7 @@ export interface SecondShelfApi {
   /** Open-banking consent for the Passport; authorise with the OTP. */
   createPassportConsent(): Promise<{ consentId: string; accountNumber: string }>;
   authorisePassportConsent(consentId: string, otp: string): Promise<BankStatement>;
+  revokePassportConsent(): Promise<void>;
 
   /** Carbon registry (server-side, sandbox). */
   carbonPreview(): Promise<CarbonPreview>;

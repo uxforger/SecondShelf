@@ -332,6 +332,10 @@ export function createMockApi(): SecondShelfApi {
       return s;
     },
 
+    async revokePassportConsent() {
+      await postAndPull('/api/passport/revoke');
+    },
+
     carbonPreview: () => get<CarbonPreview>('/api/carbon/preview'),
     submitMrv: () => postAndPull<CarbonSubmission>('/api/carbon/mrv'),
     refreshMrv: (id: string) => postAndPull<CarbonSubmission | null>(`/api/carbon/mrv/${encodeURIComponent(id)}/refresh`),

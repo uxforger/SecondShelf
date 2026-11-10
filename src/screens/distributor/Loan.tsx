@@ -106,7 +106,10 @@ export function LoanSheet({ open, onClose, verifiedSales }: { open: boolean; onC
         )}
         {step === 'offer' && loan && (
           <motion.div key="o" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={spring}>
-            <p className="t-label text-muted">Offer</p>
+            <div className="flex items-center gap-2">
+              <p className="t-label text-muted">Offer</p>
+              {loan.decision && <Badge tone={loan.decision === 'approved' ? 'success' : 'warning'}>{loan.decision === 'approved_reduced' ? 'Approved, reduced' : loan.decision === 'approved' ? 'Approved' : loan.decision}</Badge>}
+            </div>
             <p className="num mt-1 text-[2rem] font-semibold leading-[2.375rem] tracking-[-0.01em] text-deep">{naira(loan.principal)}</p>
             <dl className="mt-4 divide-y divide-hairline">
               {loan.interestRate !== undefined && <Row label="Interest" value={`${loan.interestRate}% a month`} />}
@@ -117,6 +120,19 @@ export function LoanSheet({ open, onClose, verifiedSales }: { open: boolean; onC
               <Row label="Due" value={loan.dueDate ? shortDate(loan.dueDate) : `${loan.tenorDays ?? 30} days`} />
               <Row label="Paid into" value={`Xtradot Bank ···${loan.accountNumber.slice(-4)}`} />
             </dl>
+            {loan.schedule && loan.schedule.length > 0 && (
+              <div className="mt-4">
+                <p className="t-label mb-1 text-muted">Repayments</p>
+                <ul className="divide-y divide-hairline rounded-[12px] bg-sunken px-3">
+                  {loan.schedule.map((x) => (
+                    <li key={x.instalment} className="num flex min-h-10 items-center justify-between text-[0.875rem]">
+                      <span className="text-muted">{shortDate(x.dueDate)}</span>
+                      <span className="font-semibold text-deep">{naira(x.amount)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </motion.div>
         )}
         {step === 'sending' && (

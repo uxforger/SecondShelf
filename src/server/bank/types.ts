@@ -125,7 +125,9 @@ export interface CertificateResult {
 
 export interface LoanInput {
   accountNumber: string;
-  bvn: string;
+  bvn?: string;
+  rcNumber?: string;
+  consentId?: string;
   amount: number;
   tenorDays: number;
   purpose: string;
@@ -143,6 +145,9 @@ export interface LoanResult {
   repaymentTotal?: number;
   dueDate?: string;
   creditScore?: number;
+  decision?: string;
+  requestedAmount?: number;
+  schedule?: { instalment: number; dueDate: string; amount: number }[];
   reason?: string;
   raw: unknown;
 }
@@ -156,6 +161,7 @@ export interface BankClient {
   getTransfer(reference: string): Promise<TransferResult>;
   createConsent(accountNumber: string, idempotencyKey: string): Promise<{ id: string; status: string }>;
   authoriseConsent(id: string, otp: string): Promise<{ id: string; status: string }>;
+  revokeConsent(id: string): Promise<void>;
   statement(accountNumber: string, consentId: string): Promise<StatementSummary>;
   registerWebhook(url: string, idempotencyKey: string): Promise<{ id: string; secret: string }>;
   listWebhooks(): Promise<{ id: string; url: string }[]>;
