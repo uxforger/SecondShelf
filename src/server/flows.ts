@@ -3,7 +3,7 @@ import { ApiError, type BankStatement, type Fulfilment, type Order, type Payout 
 import { BUYER } from '../lib/mock/catalogue.ts';
 import { mockBank } from './bank/mock.ts';
 import { bank, BankError, DEMO_MODE, DISTRIBUTOR_ACCOUNT, PASSPORT_ACCOUNT } from './bank/index.ts';
-import { onCarbonEvent } from './carbon.ts';
+import { applyPoolTransfer, onCarbonEvent } from './carbon.ts';
 import { onLoanEvent } from './loans.ts';
 import { merchantId, onMerchantEvent } from './merchant.ts';
 import { applyTransferEvent, enquire, registerResolver, send, type TransferTarget } from './transfers.ts';
@@ -223,6 +223,8 @@ export async function handleEvent(type: string, data: Record<string, any>) {
   }
   if (type.startsWith('transfer.') && reference) {
     const status = type.split('.')[1];
+    // The registry's payout to the carbon pool isn't one of our transfers.
+    if (applyPoolTransfer(reference, status, data)) return;
     applyTransferEvent(reference, {
       reference,
       status: status === 'successful' ? 'successful' : status === 'reversed' ? 'reversed' : status === 'failed' ? 'failed' : 'pending',

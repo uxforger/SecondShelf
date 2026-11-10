@@ -85,6 +85,8 @@ function resolve(session: Session, path: string): Resolved | null {
       case '/carbon':
         return { key: clean, el: <Carbon session={session} /> };
     }
+    const paid = match('/carbon/paid/:ref', clean);
+    if (paid) return { key: '/carbon', el: <Carbon session={session} paidRef={paid.ref} /> };
     const cert = match('/carbon/certificate/:id', clean);
     if (cert) return { key: clean, el: <Certificate id={cert.id} />, focus: true };
   }

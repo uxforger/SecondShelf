@@ -18,6 +18,11 @@ if (window.location.pathname === '/pay/return') {
   const ref = new URLSearchParams(window.location.search).get('reference') ?? '';
   history.replaceState(null, '', `/#/pay/${encodeURIComponent(ref)}`);
 }
+// Carbon credit buyer back from checkout: verify, then retire.
+if (window.location.pathname === '/carbon/return') {
+  const ref = new URLSearchParams(window.location.search).get('reference') ?? '';
+  history.replaceState(null, '', `/#/carbon/paid/${encodeURIComponent(ref)}`);
+}
 
 let depth = (history.state?.depth as number | undefined) ?? 0;
 let state: RouteState = { path: readPath(), dir: 0, key: 0 };

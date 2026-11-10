@@ -8,8 +8,8 @@ import { BankError, type BankClient } from './types.ts';
  */
 const payments = new Map<string, { amount: number; status: 'pending' | 'successful' | 'failed'; callbackUrl: string }>();
 const consents = new Map<string, { status: string }>();
-const mrvs = new Map<string, { status: string; tco2e: number }>();
-const certs = new Map<string, { projectId: string; quantity: number; beneficiary: string; reason: string; at: string }>();
+const mrvs = new Map<string, { status: string; tco2e: number; at: number }>();
+const certs = new Map<string, { quantity: number; buyer: string; reason: string; at: string }>();
 const loans = new Map<string, { status: string }>();
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -92,45 +92,59 @@ export const mockBank: BankClient = {
     return { id: 'wh_mock', secret: 'mock' };
   },
 
-  async createCarbonProject() {
+  async createCarbonProject(i) {
     await wait(500);
-    return { id: `cprj_${randomUUID().slice(0, 8)}`, status: 'registered', raw: { mock: true } };
+    return { id: `prj_${randomUUID().slice(0, 6)}`, status: 'registered', payoutAccountName: i.owner.name.toUpperCase(), raw: { mock: true } };
   },
 
   async submitMrv(i) {
-    await wait(700);
-    const id = `mrv_${randomUUID().slice(0, 8)}`;
-    mrvs.set(id, { status: 'under_review', tco2e: i.tco2e });
-    return { id, status: 'under_review', raw: { mock: true } };
+    await wait(600);
+    const id = `mrv_${randomUUID().slice(0, 6)}`;
+    const t = Math.round((i.value / 1000) * 0.53 * 100) / 100;
+    mrvs.set(id, { status: 'under_review', tco2e: t, at: Date.now() });
+    return { id, status: 'under_review', estimatedTco2e: t, autoVerifyAt: new Date(Date.now() + 60_000).toISOString(), raw: { mock: true } };
   },
 
   async getMrv(id) {
-    await wait(250);
+    await wait(200);
     const m = mrvs.get(id);
     if (!m) throw new BankError(404, 'NOT_FOUND', 'Unknown MRV.');
-    return { id, status: m.status, creditsIssued: m.status === 'verified' ? m.tco2e : undefined, raw: { mock: true } };
+    if (m.status === 'under_review' && Date.now() - m.at > 60_000) m.status = 'verified';
+    const credits = Math.floor(m.tco2e);
+    return m.status === 'verified'
+      ? { id, status: 'verified', verifiedTco2e: m.tco2e, creditsIssued: credits, creditBatchId: `crb_${id.slice(4)}`, serialRange: `NG-SSP-2026-000001 to NG-SSP-2026-${String(credits).padStart(6, '0')}`, raw: { mock: true } }
+      : { id, status: m.status, estimatedTco2e: m.tco2e, raw: { mock: true } };
   },
 
   async reviewMrv(id, approve) {
-    await wait(600);
     const m = mrvs.get(id);
     if (!m) throw new BankError(404, 'NOT_FOUND', 'Unknown MRV.');
     m.status = approve ? 'verified' : 'rejected';
-    return { id, status: m.status, creditsIssued: approve ? m.tco2e : undefined, raw: { mock: true } };
+    return this.getMrv(id);
   },
 
   async retireCredits(i) {
     await wait(700);
-    const certificateId = `cert_${randomUUID().slice(0, 8)}`;
-    certs.set(certificateId, { ...i, at: new Date().toISOString() });
-    return { certificateId, quantity: i.quantity, serial: `FCR-NG-2026-${certificateId.slice(5, 11).toUpperCase()}`, raw: { mock: true } };
+    const retirementId = `ret_${randomUUID().slice(0, 6)}`;
+    const total = i.quantity * i.pricePerCredit;
+    const fee = Math.round(total * 0.02 * 100) / 100;
+    certs.set(retirementId, { quantity: i.quantity, buyer: i.buyer.name, reason: i.reason, at: new Date().toISOString() });
+    return {
+      retirementId,
+      quantity: i.quantity,
+      totalAmount: total,
+      registryFee: fee,
+      status: 'retired',
+      payout: { reference: `TRF-MOCK-${retirementId.slice(4)}`, amount: total - fee, accountName: 'AREWA SOLAR CO-OPERATIVE SOCIETY', status: 'successful' },
+      raw: { mock: true },
+    };
   },
 
   async getCertificate(id) {
     await wait(300);
     const c = certs.get(id);
     if (!c) throw new BankError(404, 'NOT_FOUND', 'Unknown certificate.');
-    return { id, projectId: c.projectId, quantity: c.quantity, serial: `FCR-NG-2026-${id.slice(5, 11).toUpperCase()}`, beneficiary: c.beneficiary, reason: c.reason, retiredAt: c.at, raw: { mock: true } };
+    return { id, quantity: c.quantity, serialRange: `NG-SSP-2026-000001 to NG-SSP-2026-${String(c.quantity).padStart(6, '0')}`, buyer: c.buyer, reason: c.reason, retiredAt: c.at, raw: { mock: true } };
   },
 
   async applyLoan(i) {

@@ -71,44 +71,62 @@ export interface StatementSummary {
 
 export interface CarbonProjectInput {
   name: string;
+  type: string;
   methodology: string;
-  location: string;
-  description: string;
+  location: { state: string; lga: string; lat: number; lng: number };
+  owner: { name: string; contactName: string; phone: string; payoutAccount: string; bankCode: string };
   idempotencyKey: string;
+}
+
+export interface CarbonProjectResult {
+  id: string;
+  status: string;
+  payoutAccountName?: string;
+  raw: unknown;
 }
 
 export interface MrvInput {
   projectId: string;
-  periodStart: string;
-  periodEnd: string;
-  tco2e: number;
-  evidenceSummary: string;
-  items: { id: string; kind: 'sale' | 'donation'; netWeightKg: number; tco2e: number; reference: string; at: string }[];
+  periodFrom: string;
+  periodTo: string;
+  metric: string;
+  value: number;
+  evidenceUrl: string;
   idempotencyKey: string;
 }
 
 export interface MrvResult {
   id: string;
   status: string;
+  estimatedTco2e?: number;
+  verifiedTco2e?: number;
+  /** Whole credits (1 credit = 1 tCO2e, rounded down). */
   creditsIssued?: number;
+  creditBatchId?: string;
+  serialRange?: string;
+  autoVerifyAt?: string;
   note?: string;
   raw: unknown;
 }
 
 export interface RetireInput {
-  projectId: string;
-  mrvId: string;
+  creditBatchId: string;
   quantity: number;
-  beneficiary: string;
+  buyer: { name: string; email: string };
+  pricePerCredit: number;
+  paymentReference: string;
   reason: string;
   idempotencyKey: string;
 }
 
 export interface RetireResult {
-  certificateId: string;
+  retirementId: string;
   quantity: number;
-  serial?: string;
-  valueNaira?: number;
+  totalAmount?: number;
+  registryFee?: number;
+  status?: string;
+  payout?: { reference: string; amount: number; accountName?: string; status: string };
+  certificateUrl?: string;
   raw: unknown;
 }
 
@@ -117,10 +135,11 @@ export interface CertificateResult {
   projectId?: string;
   projectName?: string;
   quantity: number;
-  serial?: string;
-  beneficiary?: string;
+  serialRange?: string;
+  buyer?: string;
   reason?: string;
   retiredAt?: string;
+  pdfUrl?: string;
   raw: unknown;
 }
 
@@ -181,7 +200,7 @@ export interface BankClient {
   listWebhooks(): Promise<{ id: string; url: string }[]>;
   deleteWebhook(id: string): Promise<void>;
 
-  createCarbonProject(input: CarbonProjectInput): Promise<{ id: string; status: string; raw: unknown }>;
+  createCarbonProject(input: CarbonProjectInput): Promise<CarbonProjectResult>;
   submitMrv(input: MrvInput): Promise<MrvResult>;
   getMrv(id: string): Promise<MrvResult>;
   /** Sandbox: we play the independent verifier. */

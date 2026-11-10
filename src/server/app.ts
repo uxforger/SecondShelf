@@ -19,7 +19,7 @@ import {
   webhookSecret,
 } from './flows.ts';
 import { verifySignature } from './signature.ts';
-import { approveMrv, attemptRegistration, certificate, enquireShare, ensureProject, registrationResult, preview as carbonPreview, refreshMrv, retire, sendShare, submitMrv } from './carbon.ts';
+import { certificate, completeSale, enquireShare, ensureProject, evidenceHtml, registrationResult, preview as carbonPreview, refreshMrv, sellCredits, sendShare, submitMrv } from './carbon.ts';
 import { acceptLoan, applyForLoan, disburseLoan, offerAmount } from './loans.ts';
 import { onboardMerchant } from './merchant.ts';
 import { apply, getDb, onChange, resetAll } from './state.ts';
@@ -157,12 +157,11 @@ export function createApp(opts: { staticDir?: string } = {}) {
   app.get('/api/carbon/preview', (_req, res) => res.json(carbonPreview()));
   app.post('/api/carbon/project', wrap(async (_req, res) => res.json(await ensureProject())));
   // One honest registration attempt with the sandbox registry; the result is stored, never retried.
-  app.post('/api/carbon/register', wrap(async (_req, res) => res.json(await attemptRegistration())));
   app.get('/api/carbon/registration', (_req, res) => res.json({ result: registrationResult() }));
   app.post('/api/carbon/mrv', wrap(async (_req, res) => res.json(await submitMrv())));
   app.post('/api/carbon/mrv/:id/refresh', wrap(async (req, res) => res.json((await refreshMrv(String(req.params.id))) ?? null)));
-  app.post('/api/carbon/mrv/:id/approve', wrap(async (req, res) => res.json((await approveMrv(String(req.params.id))) ?? null)));
-  app.post('/api/carbon/mrv/:id/retire', wrap(async (req, res) => res.json(await retire(String(req.params.id)))));
+  app.post('/api/carbon/mrv/:id/sell', wrap(async (req, res) => res.json(await sellCredits(String(req.params.id), originOf(req)))));
+  app.post('/api/carbon/sales/:ref/complete', wrap(async (req, res) => res.json(await completeSale(String(req.params.ref)))));
   app.get('/api/carbon/certificates/:id', wrap(async (req, res) => res.json(await certificate(String(req.params.id)))));
   app.post('/api/carbon/certificates/:id/share/enquire', wrap(async (req, res) => res.json(await enquireShare(String(req.params.id)))));
   app.post('/api/carbon/certificates/:id/share/send', wrap(async (req, res) => res.json(await sendShare(String(req.params.id)))));
@@ -199,6 +198,14 @@ p{color:#5a6e64;margin:4px 0}h1{font-size:34px;margin:8px 0 20px}button{width:10
   });
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
+
+  // Public MRV evidence page (the registry's evidence_url).
+  app.get('/evidence/:id', (req, res) => {
+    const html = evidenceHtml(String(req.params.id));
+    if (!html) return res.status(404).type('text').send('Evidence not found');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.type('html').send(html);
+  });
 
   if (opts.staticDir && fs.existsSync(opts.staticDir)) {
     const dir = path.resolve(opts.staticDir);

@@ -160,47 +160,88 @@ export interface Db {
 export type MrvStatus = 'submitted' | 'under_review' | 'verified' | 'rejected';
 
 export interface CarbonSubmission {
+  /** Registry submission id. */
   mrvId: string;
+  /** Our evidence page id: /evidence/<evidenceId>. */
+  evidenceId: string;
   status: MrvStatus;
-  /** Our VM0046 figure, t CO2e. */
+  /** Our VM0046 food-waste figure, tCO2e. */
   tco2e: number;
-  /** Credits the registry issued (t CO2e), once verified. */
+  /** What the sandbox registry carries: ceil(tCO2e / 0.00053) kWh, solar-equivalent. */
+  kwh: number;
+  estimatedTco2e?: number;
+  verifiedTco2e?: number;
+  /** Whole credits (1 credit = 1 tCO2e, rounded down by the registry). */
   creditsIssued?: number;
-  /** "order:<id>" and "donation:<batchId>" items covered by this report. */
+  creditBatchId?: string;
+  serialRange?: string;
+  autoVerifyAt?: string;
   itemIds: string[];
   handovers: number;
   collections: number;
   foodKg: number;
   periodStart: string;
   periodEnd: string;
-  evidence: string;
   submittedAt: string;
   verifiedAt?: string;
   reviewNote?: string;
 }
 
+export interface CarbonSale {
+  /** Checkout reference to the registry merchant (mer_900). */
+  reference: string;
+  mrvId: string;
+  quantity: number;
+  pricePerCredit: number;
+  amount: number;
+  buyer: string;
+  status: 'pending' | 'paid' | 'retired' | 'failed';
+  createdAt: string;
+}
+
+export interface PoolPayout {
+  reference: string;
+  amount: number;
+  accountName?: string;
+  status: 'pending' | 'successful' | 'failed';
+  at?: string;
+}
+
 export interface CarbonRetirement {
+  /** Registry retirement id (also the certificate id). */
   certificateId: string;
   mrvId: string;
+  /** Credits retired (tCO2e). */
   tco2e: number;
-  serial?: string;
-  beneficiary: string;
+  serialRange?: string;
+  buyer: string;
   reason: string;
   retiredAt: string;
-  /** Value of the retired credits and the distributor's 60% share, naira. */
-  valueNaira: number;
+  saleReference: string;
+  pricePerCredit: number;
+  totalAmount: number;
+  registryFee: number;
+  /** Registry → pool payout (minus its 2% fee), confirmed by webhook. */
+  poolPayout?: PoolPayout;
+  /** 60% of the pool payout, sent to the distributor by us. */
   distributorShare: number;
   payout?: Payout;
+  certificateUrl?: string;
 }
 
 export interface CarbonState {
-  /** "sandbox" = Forge Carbon Registry; "simulated" = our mock registry (sandbox has no food-waste project type). */
+  /** "sandbox" = Forge Carbon Registry; "simulated" = local demo mode only. */
   registry?: 'sandbox' | 'simulated';
   projectId: string;
+  /** Shown in our UI: "Food waste reduction (VM0046)". */
   projectName: string;
+  /** Shown as the registry project: "SecondShelf carbon pool (sandbox)". */
+  poolName: string;
+  payoutAccountName?: string;
   methodology: string;
   createdAt: string;
   submissions: CarbonSubmission[];
+  sales: CarbonSale[];
   retirements: CarbonRetirement[];
 }
 
@@ -208,11 +249,13 @@ export interface CarbonCertificate {
   id: string;
   projectId: string;
   projectName: string;
+  poolName: string;
   tco2e: number;
-  serial?: string;
-  beneficiary?: string;
+  serialRange?: string;
+  buyer?: string;
   reason?: string;
   retiredAt?: string;
+  pdfUrl?: string;
   registry: string;
   methodology: string;
   source: 'registry' | 'local';
@@ -276,6 +319,8 @@ export interface CarbonPreview {
   collections: number;
   foodKg: number;
   tco2e: number;
+  /** Solar-equivalent kWh the registry will carry. */
+  kwh: number;
 }
 
 export interface PayoutPreview {
@@ -334,9 +379,10 @@ export interface SecondShelfApi {
   carbonPreview(): Promise<CarbonPreview>;
   submitMrv(): Promise<CarbonSubmission>;
   refreshMrv(mrvId: string): Promise<CarbonSubmission | null>;
-  /** Sandbox only: act as the independent verifier. */
-  approveMrv(mrvId: string): Promise<CarbonSubmission | null>;
-  retireCredits(mrvId: string): Promise<CarbonRetirement>;
+  /** Buyer pays the registry merchant (mer_900) on the hosted checkout. */
+  sellCredits(mrvId: string): Promise<{ reference: string; paymentUrl: string; amount: number }>;
+  /** After checkout: verify the payment, then retire with its payment_reference. */
+  completeSale(reference: string): Promise<{ status: string; retirement?: CarbonRetirement; message?: string }>;
   getCertificate(certificateId: string): Promise<CarbonCertificate>;
   enquireCarbonShare(certificateId: string): Promise<PayoutPreview>;
   sendCarbonShare(certificateId: string): Promise<Payout>;

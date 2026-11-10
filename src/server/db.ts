@@ -56,6 +56,30 @@ sql.exec(`
     created_at TEXT NOT NULL
   );
 
+  -- Carbon: which rescued batches back each MRV submission (evidence page).
+  CREATE TABLE IF NOT EXISTS carbon_evidence (
+    id TEXT PRIMARY KEY,
+    mrv_id TEXT,
+    items_json TEXT NOT NULL,
+    tco2e REAL NOT NULL,
+    kwh INTEGER NOT NULL,
+    period_from TEXT NOT NULL,
+    period_to TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+
+  -- Carbon credit sales: checkout to the registry merchant before retirement.
+  CREATE TABLE IF NOT EXISTS carbon_sales (
+    reference TEXT PRIMARY KEY,
+    mrv_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    price REAL NOT NULL,
+    amount REAL NOT NULL,
+    status TEXT NOT NULL,
+    idem_key TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+
   -- Webhook de-duplication.
   CREATE TABLE IF NOT EXISTS webhook_events (
     event_id TEXT PRIMARY KEY,

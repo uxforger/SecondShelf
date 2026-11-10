@@ -74,12 +74,16 @@ const pct = (v?: number) => (v === undefined ? undefined : v > 0 && v < 1 ? Math
 const round3 = (n: number) => Math.round(n * 1000) / 1000;
 
 function toMrv(d: Json) {
-  const status = String(d.status ?? d.review_status ?? 'submitted').toLowerCase();
   return {
-    id: String(d.id ?? d.mrv_id),
-    status,
-    creditsIssued: num(d.credits_issued ?? d.issued_credits ?? d.verified_tco2e ?? d.credits),
-    note: d.review_notes ?? d.notes ?? d.reason,
+    id: String(d.submission_id ?? d.id ?? d.mrv_id),
+    status: String(d.status ?? 'submitted').toLowerCase(),
+    estimatedTco2e: num(d.estimated_tco2e),
+    verifiedTco2e: num(d.verified_tco2e),
+    creditsIssued: num(d.credits_issued),
+    creditBatchId: d.credit_batch_id,
+    serialRange: d.serial_range,
+    autoVerifyAt: d.auto_verify_at,
+    note: d.reason ?? d.notes,
     raw: d,
   };
 }
@@ -293,40 +297,23 @@ export const httpBank: BankClient = {
       'POST',
       '/carbon/projects',
       {
-        // Spec v2 shape. Honest type only: never solar, cookstoves or trees.
         name: i.name,
-        type: process.env.CARBON_PROJECT_TYPE || 'food_waste_diversion',
-        location: { state: 'Lagos', lga: 'Mushin', lat: 6.53, lng: 3.35 },
-        owner: {
-          name: 'Iya Bisi Foods Enterprises',
-          contact_name: 'Iya Bisi',
-          phone: '+2348051234507',
-          payout_account: '8051234507',
-          bank_code: '090405',
-        },
-        methodology: 'VM0046 food loss and waste',
-        description: i.description,
+        type: i.type,
+        location: i.location,
+        owner: { name: i.owner.name, contact_name: i.owner.contactName, phone: i.owner.phone, payout_account: i.owner.payoutAccount, bank_code: i.owner.bankCode },
+        methodology: i.methodology,
       },
       i.idempotencyKey,
     );
     shape('carbon project', d);
-    return { id: String(d.project_id ?? d.id), status: String(d.status ?? 'registered'), raw: d };
+    return { id: String(d.project_id ?? d.id), status: String(d.status ?? 'registered'), payoutAccountName: d.payout_account_name, raw: d };
   },
 
   async submitMrv(i) {
     const d = await call(
       'POST',
       `/carbon/projects/${encodeURIComponent(i.projectId)}/mrv`,
-      {
-        period_start: i.periodStart,
-        period_end: i.periodEnd,
-        methodology: 'VM0046',
-        tco2e: round3(i.tco2e),
-        claimed_tco2e: round3(i.tco2e),
-        emission_reductions_tco2e: round3(i.tco2e),
-        evidence_summary: i.evidenceSummary,
-        evidence: i.items.map((x) => ({ type: x.kind, reference: x.reference, net_weight_kg: round3(x.netWeightKg), tco2e: round3(x.tco2e), date: x.at })),
-      },
+      { period: { from: i.periodFrom, to: i.periodTo }, metric: i.metric, value: i.value, evidence_url: i.evidenceUrl, sensor_ids: [] },
       i.idempotencyKey,
     );
     shape('mrv submit', d);
@@ -338,13 +325,7 @@ export const httpBank: BankClient = {
   },
 
   async reviewMrv(id, approve, idempotencyKey) {
-    const d = await call(
-      'POST',
-      `/carbon/mrv/${encodeURIComponent(id)}/review`,
-      { decision: approve ? 'approve' : 'reject', outcome: approve ? 'verified' : 'rejected', notes: 'Sandbox verifier review of SecondShelf handover and collection records.' },
-      idempotencyKey,
-    );
-    shape('mrv review', d);
+    const d = await call('POST', `/carbon/mrv/${encodeURIComponent(id)}/review`, { decision: approve ? 'verified' : 'rejected' }, idempotencyKey);
     return toMrv(d);
   },
 
@@ -352,15 +333,27 @@ export const httpBank: BankClient = {
     const d = await call(
       'POST',
       '/carbon/credits/retire',
-      { project_id: i.projectId, mrv_id: i.mrvId, quantity: round3(i.quantity), tco2e: round3(i.quantity), beneficiary: i.beneficiary, beneficiary_name: i.beneficiary, reason: i.reason, retirement_reason: i.reason },
+      {
+        credit_batch_id: i.creditBatchId,
+        quantity: i.quantity,
+        buyer: i.buyer,
+        price_per_credit: Number(i.pricePerCredit.toFixed(2)),
+        currency: 'NGN',
+        payment_reference: i.paymentReference,
+        retirement_reason: i.reason,
+      },
       i.idempotencyKey,
     );
     shape('retire', d);
+    const po = d.payout as Json | undefined;
     return {
-      certificateId: String(d.certificate_id ?? d.certificate?.id ?? d.id),
-      quantity: Number(d.quantity ?? d.tco2e ?? i.quantity),
-      serial: d.serial ?? d.serial_number ?? d.certificate?.serial,
-      valueNaira: num(d.value ?? d.amount ?? d.value_ngn),
+      retirementId: String(d.retirement_id ?? d.id),
+      quantity: Number(d.quantity ?? i.quantity),
+      totalAmount: num(d.total_amount),
+      registryFee: num(d.registry_fee),
+      status: d.status,
+      payout: po ? { reference: String(po.reference), amount: Number(po.amount), accountName: po.account_name, status: String(po.status ?? 'pending') } : undefined,
+      certificateUrl: d.certificate_url,
       raw: d,
     };
   },
@@ -368,15 +361,17 @@ export const httpBank: BankClient = {
   async getCertificate(id) {
     const d = await call('GET', `/carbon/certificates/${encodeURIComponent(id)}`);
     shape('certificate', d);
+    const buyer = d.buyer as Json | string | undefined;
     return {
-      id: String(d.id ?? d.certificate_id ?? id),
-      projectId: d.project_id ?? d.project?.id,
+      id: String(d.retirement_id ?? d.certificate_id ?? d.id ?? id),
+      projectId: d.project_id ?? d.project?.project_id ?? d.project?.id,
       projectName: d.project_name ?? d.project?.name,
-      quantity: Number(d.quantity ?? d.tco2e ?? 0),
-      serial: d.serial ?? d.serial_number ?? d.serial_range,
-      beneficiary: d.beneficiary ?? d.beneficiary_name,
-      reason: d.reason ?? d.retirement_reason,
-      retiredAt: d.retired_at ?? d.issued_at ?? d.created_at,
+      quantity: Number(d.quantity ?? d.credits ?? 0),
+      serialRange: d.serial_range ?? d.serials,
+      buyer: typeof buyer === 'string' ? buyer : buyer?.name,
+      reason: d.retirement_reason ?? d.reason,
+      retiredAt: d.retired_at ?? d.created_at,
+      pdfUrl: d.pdf_url ?? d.certificate_pdf_url,
       raw: d,
     };
   },
