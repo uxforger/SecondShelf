@@ -79,6 +79,8 @@ export interface BankClient {
   authoriseConsent(id: string, otp: string): Promise<{ id: string; status: string }>;
   statement(accountNumber: string, consentId: string): Promise<StatementSummary>;
   registerWebhook(url: string, idempotencyKey: string): Promise<{ id: string; secret: string }>;
+  listWebhooks(): Promise<{ id: string; url: string }[]>;
+  deleteWebhook(id: string): Promise<void>;
 }
 
 export class BankError extends Error {

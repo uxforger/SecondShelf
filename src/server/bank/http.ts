@@ -98,7 +98,8 @@ export const httpBank: BankClient = {
         customer_name: i.customerName,
         customer_email: i.customerEmail,
         email: i.customerEmail,
-        ...(process.env.BANK_MERCHANT_ID ? { merchant_id: process.env.BANK_MERCHANT_ID } : {}),
+        // The distributor's merchant on the sandbox (guide §5.4: mer_204 Mama Nkechi Provisions).
+        merchant_id: process.env.BANK_MERCHANT_ID || 'mer_204',
       },
       i.idempotencyKey,
     );
@@ -147,7 +148,14 @@ export const httpBank: BankClient = {
     const d = await call(
       'POST',
       '/open-banking/consents',
-      { account_number: accountNumber, scopes: ['accounts', 'balance', 'statement'], permissions: ['accounts', 'balance', 'statement'], purpose: 'SecondShelf Business Passport' },
+      {
+        account_number: accountNumber,
+        // Synthetic contact for the sandbox OTP; no real personal data.
+        customer_phone: process.env.CONSENT_PHONE || '08000000193',
+        scopes: ['accounts', 'balance', 'statement'],
+        permissions: ['accounts', 'balance', 'statement'],
+        purpose: 'SecondShelf Business Passport',
+      },
       idempotencyKey,
     );
     return { id: d.id ?? d.consent_id, status: d.status ?? 'pending' };
@@ -172,6 +180,19 @@ export const httpBank: BankClient = {
       if (at && (!summary.to || at > summary.to)) summary.to = at;
     }
     return summary;
+  },
+
+  async listWebhooks() {
+    const d = await call('GET', '/webhooks?per_page=100');
+    const list: Json[] = Array.isArray(d) ? d : (d.items ?? d.webhooks ?? []);
+    return list.map((w) => ({ id: String(w.id ?? w.webhook_id ?? ''), url: String(w.url ?? '') })).filter((w) => w.id);
+  },
+
+  async deleteWebhook(id) {
+    const key = process.env.GATEWAY_KEY!;
+    await takeSlot();
+    const res = await fetch(`${BASE}/webhooks/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'x-api-key': key }, signal: AbortSignal.timeout(32_000) });
+    log('DELETE', '/webhooks/{id}', res.status);
   },
 
   async registerWebhook(url, idempotencyKey) {

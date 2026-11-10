@@ -83,4 +83,10 @@ export const mockBank: BankClient = {
   async registerWebhook() {
     return { id: 'wh_mock', secret: 'mock' };
   },
+
+  async listWebhooks() {
+    return [];
+  },
+
+  async deleteWebhook() {},
 };

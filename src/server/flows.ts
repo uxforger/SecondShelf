@@ -325,6 +325,13 @@ export async function ensureWebhook() {
     idem = randomUUID();
     kvSet('webhook_idem', idem);
   }
+  // Our earlier registrations (e.g. from a pod that lost its disk) have secrets
+  // we no longer know; remove them so every delivery can be verified.
+  try {
+    for (const w of await bank.listWebhooks()) if (w.url === WEBHOOK_URL) await bank.deleteWebhook(w.id);
+  } catch (e) {
+    console.warn(`[hook] cleanup skipped: ${(e as Error).message}`);
+  }
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
       const w = await bank.registerWebhook(WEBHOOK_URL, idem);
