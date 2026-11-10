@@ -21,6 +21,7 @@ import {
 import { verifySignature } from './signature.ts';
 import { approveMrv, attemptRegistration, certificate, enquireShare, ensureProject, registrationResult, preview as carbonPreview, refreshMrv, retire, sendShare, submitMrv } from './carbon.ts';
 import { acceptLoan, applyForLoan, disburseLoan, offerAmount } from './loans.ts';
+import { onboardMerchant } from './merchant.ts';
 import { apply, getDb, onChange, resetAll } from './state.ts';
 
 /** Where the browser should come back to after the hosted checkout. */
@@ -165,6 +166,9 @@ export function createApp(opts: { staticDir?: string } = {}) {
   app.get('/api/carbon/certificates/:id', wrap(async (req, res) => res.json(await certificate(String(req.params.id)))));
   app.post('/api/carbon/certificates/:id/share/enquire', wrap(async (req, res) => res.json(await enquireShare(String(req.params.id)))));
   app.post('/api/carbon/certificates/:id/share/send', wrap(async (req, res) => res.json(await sendShare(String(req.params.id)))));
+
+  // Ade Foods as a collections merchant (one-time onboarding).
+  app.post('/api/merchant/onboard', wrap(async (_req, res) => res.json(await onboardMerchant())));
 
   // 5b. Inventory loan
   app.get('/api/loans/offer', (_req, res) => res.json({ amount: offerAmount() }));

@@ -70,6 +70,7 @@ export const PRODUCTS: Product[] = [
 export const DISTRIBUTOR: Business = {
   id: 'biz-ade',
   name: 'Ade Foods',
+  owner: 'Babatunde Olumide Adeyemi',
   area: 'Mushin',
   role: 'distributor',
   distanceKm: 0,

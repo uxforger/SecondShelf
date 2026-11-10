@@ -12,14 +12,14 @@ export const bank: BankClient = DEMO_MODE ? mockBank : httpBank;
 
 /** SecondShelf's settlement account (team-owned sandbox account), source of payouts. */
 export const SETTLEMENT_ACCOUNT = process.env.SETTLEMENT_ACCOUNT || '0123456789';
-/** The demo distributor's receiving account: Mama Nkechi Provisions Ltd. */
-export const DISTRIBUTOR_ACCOUNT = process.env.DISTRIBUTOR_ACCOUNT || '0123456793';
+/** The demo distributor: Babatunde Olumide Adeyemi trading as Ade Foods (Xtradot, tier 3). */
+export const DISTRIBUTOR_ACCOUNT = process.env.DISTRIBUTOR_ACCOUNT || '0123456790';
 /** Account read (with consent) for the Business Passport. */
 export const PASSPORT_ACCOUNT = process.env.PASSPORT_ACCOUNT || DISTRIBUTOR_ACCOUNT;
-/** Loans need an individual with a BVN: Ade Foods' owner, Babatunde Olumide Adeyemi (sandbox fixture). */
-export const LOAN_ACCOUNT = process.env.LOAN_ACCOUNT || '0123456790';
+/** Loans need an individual with a BVN: the same trader. */
+export const LOAN_ACCOUNT = process.env.LOAN_ACCOUNT || DISTRIBUTOR_ACCOUNT;
 export const LOAN_BVN = process.env.LOAN_BVN ?? '22200000002';
-/** For a corporate applicant (spec v2 lists RC 1849302 for Mama Nkechi Provisions). */
+/** Only for a corporate applicant; unused in the demo. */
 export const LOAN_RC = process.env.LOAN_RC || '';
 
 export * from './types.ts';

@@ -4,6 +4,7 @@
  */
 
 export interface CheckoutInput {
+  merchantId: string;
   reference: string;
   amount: number;
   callbackUrl: string;
@@ -152,6 +153,18 @@ export interface LoanResult {
   raw: unknown;
 }
 
+export interface MerchantInput {
+  businessName: string;
+  rcNumber: string;
+  businessType: string;
+  tin: string;
+  category: string;
+  address: { line1: string; city: string; state: string };
+  directors: { name: string; bvn: string }[];
+  settlementAccount: string;
+  contactEmail: string;
+}
+
 export interface BankClient {
   readonly mode: 'sandbox' | 'mock';
   checkout(input: CheckoutInput): Promise<CheckoutResult>;
@@ -164,6 +177,7 @@ export interface BankClient {
   revokeConsent(id: string): Promise<void>;
   statement(accountNumber: string, consentId: string): Promise<StatementSummary>;
   registerWebhook(url: string, idempotencyKey: string): Promise<{ id: string; secret: string }>;
+  onboardMerchant(input: MerchantInput, idempotencyKey: string): Promise<{ merchantId: string; status: string; liveAfter?: string }>;
   listWebhooks(): Promise<{ id: string; url: string }[]>;
   deleteWebhook(id: string): Promise<void>;
 

@@ -25,6 +25,8 @@ export interface Product {
 export interface Business {
   id: string;
   name: string;
+  /** Owner, for a sole trader ("trading as"). */
+  owner?: string;
   area: string;
   role: Role;
   /** Distance from the demo distributor, km. */

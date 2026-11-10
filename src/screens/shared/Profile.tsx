@@ -36,6 +36,7 @@ export function Profile({ session }: { session: Session }) {
           <p className="t-label text-muted">
             {ROLE_LABEL[session.role]} · {biz?.area}
           </p>
+          {biz?.owner && <p className="t-caption text-muted">{biz.owner}</p>}
         </div>
       </Card>
 

@@ -5,6 +5,7 @@ import { mockBank } from './bank/mock.ts';
 import { bank, BankError, DEMO_MODE, DISTRIBUTOR_ACCOUNT, PASSPORT_ACCOUNT } from './bank/index.ts';
 import { onCarbonEvent } from './carbon.ts';
 import { onLoanEvent } from './loans.ts';
+import { merchantId, onMerchantEvent } from './merchant.ts';
 import { applyTransferEvent, enquire, registerResolver, send, type TransferTarget } from './transfers.ts';
 import { kvGet, kvSet, now, sql } from './db.ts';
 import { apply, dryRun, getDb } from './state.ts';
@@ -64,6 +65,7 @@ export async function startCheckout(input: { batchId: string; qty: number; fulfi
   };
   // Same rules as a real sale (stock, expiry) before we ask anyone to pay.
   dryRun({ type: 'order/place', at: order.paidAt, today: today(), order });
+  const merchant = merchantId();
 
   const idem = randomUUID();
   const t = now();
@@ -73,6 +75,7 @@ export async function startCheckout(input: { batchId: string; qty: number; fulfi
 
   const product = db.products.find((p) => p.id === order.productId);
   const res = await bank.checkout({
+    merchantId: merchant,
     reference,
     amount: order.total,
     callbackUrl: `${origin}/pay/return`,
@@ -234,6 +237,10 @@ export async function handleEvent(type: string, data: Record<string, any>) {
   }
   if (type.startsWith('carbon.')) {
     await onCarbonEvent(type, data).catch((e) => console.warn(`[hook] ${type}: ${(e as Error).message}`));
+    return;
+  }
+  if (type.startsWith('merchant.')) {
+    onMerchantEvent(type, data);
     return;
   }
   if (type.startsWith('loan.')) {

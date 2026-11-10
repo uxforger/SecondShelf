@@ -42,7 +42,7 @@ export const mockBank: BankClient = {
   async nameEnquiry(accountNumber) {
     await wait(450);
     if (accountNumber === '0000000001') throw new BankError(404, 'ACCOUNT_NOT_FOUND', 'Account not found.');
-    return { accountNumber, accountName: 'Mama Nkechi Provisions Ltd', nameEnquiryRef: `NE-${randomUUID().slice(0, 8)}`, bankName: 'Xtradot Bank' };
+    return { accountNumber, accountName: 'BABATUNDE OLUMIDE ADEYEMI', nameEnquiryRef: `NE-${randomUUID().slice(0, 8)}`, bankName: 'Xtradot Bank' };
   },
 
   async transfer(i) {
@@ -85,7 +85,7 @@ export const mockBank: BankClient = {
 
   async statement(accountNumber) {
     await wait(700);
-    return { accountNumber, accountName: 'Mama Nkechi Provisions Ltd', transactions: 46, credits: 8_420_000, debits: 6_115_500, from: '2026-10-01', to: '2026-10-31' };
+    return { accountNumber, accountName: 'BABATUNDE OLUMIDE ADEYEMI', transactions: 46, credits: 8_420_000, debits: 6_115_500, from: '2026-10-01', to: '2026-10-31' };
   },
 
   async registerWebhook() {
@@ -158,6 +158,10 @@ export const mockBank: BankClient = {
     await wait(800);
     loans.set(id, { status: 'disbursed' });
     return { id, status: 'disbursed', raw: { mock: true } };
+  },
+
+  async onboardMerchant() {
+    return { merchantId: 'mer_mock', status: 'active' };
   },
 
   async listWebhooks() {

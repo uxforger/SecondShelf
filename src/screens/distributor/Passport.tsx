@@ -109,6 +109,7 @@ export function Passport({ session }: { session: Session }) {
                 <p className="mt-1 text-[1.25rem] font-semibold leading-7">
                   {biz?.name}, {biz?.area}
                 </p>
+                {biz?.owner && <p className="t-label text-white/70">{biz.owner}</p>}
               </div>
               {db.passportSharedAt && <Badge tone="deep" className="bg-white/12 ring-1 ring-white/20">Shared {shortDate(db.passportSharedAt)}</Badge>}
             </div>
@@ -129,8 +130,8 @@ export function Passport({ session }: { session: Session }) {
           {statement && !statement.revokedAt && (
             <Card className="p-5 lg:p-6">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="t-heading text-deep">{statement.source === 'simulated' ? 'Bank statement' : 'Bank-verified'}</h2>
-                {statement.source === 'simulated' ? <Badge tone="warning">Simulated</Badge> : <Badge tone="success">Access Bank</Badge>}
+                <h2 className="t-heading text-deep">Bank statement</h2>
+                {statement.source === 'simulated' ? <Badge tone="warning">Simulated</Badge> : <Badge tone="success">Bank-verified</Badge>}
               </div>
               <p className="t-label mt-1 text-muted">
                 {statement.accountName ?? 'Business account'} ···{statement.accountNumber.slice(-4)} · read with consent {shortDate(statement.at)}

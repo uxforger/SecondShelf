@@ -6,7 +6,6 @@ const HOLDER_PHONE: Record<string, string> = {
   '0123456790': '+2348051234502',
   '0123456791': '+2348061234503',
   '0123456792': '+2348071234504',
-  '0123456793': '+2348091234505',
 };
 
 /** Seeded history is October 2026; read that month (STATEMENT_FROM/TO to override). */
@@ -158,8 +157,8 @@ export const httpBank: BankClient = {
         customer_name: i.customerName,
         customer_email: i.customerEmail,
         email: i.customerEmail,
-        // The distributor's merchant on the sandbox (guide §5.4: mer_204 Mama Nkechi Provisions).
-        merchant_id: process.env.BANK_MERCHANT_ID || 'mer_204',
+        // Ade Foods' own merchant (onboarded once; see merchant.ts).
+        merchant_id: i.merchantId,
       },
       i.idempotencyKey,
     );
@@ -253,6 +252,27 @@ export const httpBank: BankClient = {
       from: d.period?.from ?? from,
       to: d.period?.to ?? to,
     };
+  },
+
+  async onboardMerchant(i, idempotencyKey) {
+    const d = await call(
+      'POST',
+      '/merchants/onboard',
+      {
+        business_name: i.businessName,
+        rc_number: i.rcNumber,
+        business_type: i.businessType,
+        tin: i.tin,
+        category: i.category,
+        address: i.address,
+        directors: i.directors,
+        settlement_account: { account_number: i.settlementAccount, bank_code: '000014' },
+        contact_email: i.contactEmail,
+      },
+      idempotencyKey,
+    );
+    shape('merchant onboard', d);
+    return { merchantId: String(d.merchant_id ?? d.id), status: String(d.status ?? 'under_review'), liveAfter: d.live_after };
   },
 
   async listWebhooks() {
