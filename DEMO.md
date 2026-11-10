@@ -27,15 +27,14 @@ Open the same link on both phones and the laptop. Before the demo: Profile → *
 
 1. **Scan** (Phone 1): Scan → Enter code `2006001000030` → expiry 4 weeks out → **Save**. The "Milk powder · 4 weeks left" alert drops in.
 2. **List** (Phone 1): tap the alert → **List now**. *Phone 2* gets "New near you · Milk powder".
-3. **Pay** (Phone 2): tap the banner → **Buy** → **Pay with bank** → on the bank page tap **Pay with test card**. You land back on "Paid!" with a QR code. *(If the URL still shows a Cloudflare login first, sign in and you'll return to the verify screen.)*
+3. **Pay** (Phone 2): tap the banner → **Buy** → **Pay with bank** → on the bank page **Pay with test card**. Back on "Paid!" with a QR code.
 4. **Handover** (Phone 1): Sales → **Confirm** → scan Phone 2's QR (or Enter code `SS-…`) → "Handed over" → **Pay out**. *Phone 2* flips to Handed over.
-5. **Carbon** (Phone 1): Passport → **Open carbon** (laptop: sidebar → Carbon)
-   - **Submit MRV** → "Under review"
-   - **Approve as verifier** (sandbox) → Verified
-   - **Retire** → certificate opens → **Done**
-   - **Pay out** the 60% share → "Carbon share paid"
-   - The dashboard's Carbon registry card shows Submitted · Verified · Retired · Paid out.
-6. **Stock loan** (Phone 1): Passport → **Get stock loan** → **Apply** → offer (rate, fee, what you receive, credit score) → **Accept** → "Funds sent".
-7. **Passport** (Phone 1): **Share with bank** → **Share** → code `123456` → **Authorise** (simulated until we have the holder phone).
+5. **Share Passport** (Phone 1, real bank): Passport → **Share with bank** → **Share** → code `123456` → **Authorise**. The card shows **Bank-verified · Access Bank** (₦7.7m in, ₦3.7m out). "Stop sharing" revokes it.
+6. **Stock loan** (Phone 1, real bank): Passport → **Get stock loan** → **Apply** → **Approved**, credit score, rate, fee, schedule → **Accept** → "Funds sent".
+7. **Carbon** (Phone 1, labelled *Simulated registry* until the organisers add a food-waste type): Passport → **Open carbon**
+   - **Submit MRV**
+   - **Approve as verifier**
+   - **Retire** → certificate
+   - **Pay out** the share
 
-Real sandbox: payment, payout, carbon share transfer, loan. Simulated and labelled: carbon registry records, Passport consent.
+Real sandbox: payment, payout, Passport consent and statement, loan, carbon share transfer. Simulated and labelled: carbon registry records.
