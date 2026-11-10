@@ -61,7 +61,11 @@ One container: an Express server (`src/server/`) serves the built app, `/api/*` 
 
 Rules enforced in code: `Idempotency-Key` on every money-moving or record-creating POST; never resend after 504; always verify payments; fees read from responses; a client-side limiter keeps us under 50 bank calls a minute; synthetic data only. Browsers can only send stock and handover actions; payments, payouts and bank data are server-only.
 
-Not verifiable from a laptop: the sandbox only answers inside the cluster, and the exact request fields come from a spec we don't have. The server logs every bank call as `[bank] METHOD /path -> status CODE (request_id)` (no keys, no bodies), so the first sandbox run shows any field mismatch.
+**Live sandbox results (10 Nov):** checkout (with `merchant_id: mer_204`), hosted test-card payment, signed `payment.*` webhooks, verify, intra name enquiry, transfer and signed `transfer.successful` all pass end to end through the real UI. Fixes found on the live run: `merchant_id` required on checkout; account resolve needs `bank_code`; the return screen raced the server connection (fixed).
+
+**Passport consent:** the sandbox requires `customer_phone` matching the holder's phone on file. The guide doesn't list it and no endpoint exposes it (account resolve and BVN verify don't return phones). Until it's known, sharing uses the simulated bank and the Passport card says **"Simulated"**. When the organisers give the phone: `kubectl set env deployment/app CONSENT_PHONE=<phone>` (no rebuild) and it goes to the real sandbox.
+
+The server logs every bank call as `[bank] METHOD /path -> status CODE field=… (request_id)`: never keys or request bodies.
 
 Distributor naming: the app's distributor is "Ade Foods"; the sandbox payout account's holder is "Mama Nkechi Provisions Ltd". Name enquiry shows the real holder name, as the bank requires.
 

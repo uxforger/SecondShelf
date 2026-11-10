@@ -48,6 +48,19 @@ Or pin a known-good tag: `sed "s/IMAGE_TAG/<old-sha>/" k8s/app.yaml | kubectl ap
 
 Data is safe either way: it lives on the `app-data` volume (`/data/secondshelf.db`), not in the image.
 
+## Current platform workarounds (10 Nov)
+
+- **Storage:** the platform can't create volumes ("outstanding balance on your account"). The live deployment is patched to keep `/data` in pod-local storage, so demo data resets if the pod restarts. Release with `kubectl set image` (keeps the patch):
+  ```bash
+  kubectl set image deployment/app app=ghcr.io/uxforger/secondshelf:$SHA
+  kubectl rollout status deployment/app
+  ```
+  Once the platform fixes billing, `sed "s/IMAGE_TAG/$SHA/" k8s/app.yaml | kubectl apply -f -` restores the persistent volume (claim `app-data` is waiting).
+- **Public URL:** Cloudflare Access sits in front of `team19.xtradot.co` and asks for a login. Test through a tunnel meanwhile:
+  ```bash
+  kubectl port-forward deploy/app 18080:8080   # then open http://127.0.0.1:18080
+  ```
+
 ## Day-to-day
 
 ```bash

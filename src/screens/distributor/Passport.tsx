@@ -104,7 +104,7 @@ export function Passport({ session }: { session: Session }) {
           {statement && (
             <Card className="p-5 lg:p-6">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="t-heading text-deep">Bank-verified</h2>
+                <h2 className="t-heading text-deep">{statement.source === 'simulated' ? 'Bank statement' : 'Bank-verified'}</h2>
                 {statement.source === 'simulated' ? <Badge tone="warning">Simulated</Badge> : <Badge tone="success">Access Bank</Badge>}
               </div>
               <p className="t-label mt-1 text-muted">
@@ -229,7 +229,7 @@ export function Passport({ session }: { session: Session }) {
               <SuccessMark size={80} />
               <p className="t-title mt-5 text-deep">Shared</p>
               <p className="t-label mt-1 text-muted">
-                {statement ? `${statement.transactions} transactions verified by Access Bank.` : 'Access Bank can view your Passport.'}
+                {statement ? (statement.source === 'simulated' ? `${statement.transactions} transactions read (simulated).` : `${statement.transactions} transactions verified by Access Bank.`) : 'Access Bank can view your Passport.'}
               </p>
             </motion.div>
           )}
