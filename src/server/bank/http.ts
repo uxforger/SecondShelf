@@ -148,7 +148,7 @@ export const httpBank: BankClient = {
     // The bank requires the account holder's phone on file; resolve it first.
     let phone = process.env.CONSENT_PHONE;
     if (!phone) {
-      const r = await call('GET', `/accounts/resolve?account_number=${encodeURIComponent(accountNumber)}`);
+      const r = await call('GET', `/accounts/resolve?account_number=${encodeURIComponent(accountNumber)}&bank_code=${process.env.BANK_NIP_CODE || '000014'}`);
       const holder = (r.account_holder ?? r.holder ?? r.customer ?? r) as Json;
       phone = holder.phone ?? holder.phone_number ?? holder.mobile ?? holder.customer_phone ?? holder.msisdn ?? r.phone ?? r.phone_number;
       // Field names only (never values) so a mismatch is easy to fix.
