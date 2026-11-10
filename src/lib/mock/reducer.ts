@@ -1,4 +1,4 @@
-import { ApiError, type Activity, type Batch, type Db, type Order, type Product } from '../api/types.ts';
+import { ApiError, type Activity, type BankStatement, type Batch, type Db, type Order, type Payout, type Product } from '../api/types.ts';
 import { daysLeft } from '../dates.ts';
 import { discountedPrice, URGENT_DAYS } from '../expiry.ts';
 import { FOOD_BANK } from './catalogue.ts';
@@ -16,7 +16,13 @@ export type Action =
   | { type: 'donation/collect'; at: string; batchId: string }
   | { type: 'order/place'; at: string; today: string; order: Order }
   | { type: 'order/handover'; at: string; ref: string }
-  | { type: 'passport/share'; at: string };
+  | { type: 'passport/share'; at: string }
+  // Server-only: set from verified bank responses, never accepted from a browser.
+  | { type: 'order/payout'; at: string; orderId: string; payout: Payout }
+  | { type: 'passport/bank'; at: string; statement: BankStatement };
+
+/** Actions a browser may send. Payments, payouts and bank data are server-only. */
+export const CLIENT_ACTIONS: Action['type'][] = ['batch/add', 'batch/list', 'batch/unlist', 'batch/donate', 'donation/collect', 'order/handover'];
 
 const MAX_ACTIVITY = 40;
 
@@ -211,6 +217,47 @@ export function reduce(db: Db, action: Action): Db {
           businessIds: [o.sellerId, o.buyerId],
           batchId: o.batchId,
           orderId: o.id,
+        }),
+      };
+    }
+
+    case 'order/payout': {
+      const o = db.orders.find((x) => x.id === action.orderId);
+      if (!o) throw new ApiError('Order not found.');
+      const was = o.payout?.status;
+      const next: Order = { ...o, payout: action.payout };
+      const announce = action.payout.status === 'successful' && was !== 'successful';
+      return {
+        ...db,
+        version,
+        orders: db.orders.map((x) => (x.id === o.id ? next : x)),
+        activity: announce
+          ? withActivity(db, {
+              at: action.at,
+              kind: 'paid_out',
+              title: `Paid out to ${action.payout.accountName}`,
+              detail: `${o.ref} · Xtradot Bank ···${action.payout.accountNumber.slice(-4)}`,
+              amount: action.payout.amount,
+              businessIds: [o.sellerId],
+              batchId: o.batchId,
+              orderId: o.id,
+            })
+          : db.activity,
+      };
+    }
+
+    case 'passport/bank': {
+      return {
+        ...db,
+        version,
+        passportSharedAt: action.at,
+        passportStatement: action.statement,
+        activity: withActivity(db, {
+          at: action.at,
+          kind: 'shared',
+          title: 'Passport shared with Access Bank',
+          detail: `${action.statement.transactions} bank transactions read with consent`,
+          businessIds: ['biz-ade'],
         }),
       };
     }

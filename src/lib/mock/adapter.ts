@@ -6,7 +6,11 @@ import {
   type NewBatchInput,
   type Order,
   type OrderInput,
-  type PayStage,
+  type BankStatement,
+  type CheckoutStart,
+  type Payout,
+  type PaymentResult,
+  type PayoutPreview,
   type Product,
   type Role,
   type SecondShelfApi,
@@ -82,7 +86,7 @@ export function createMockApi(): SecondShelfApi {
     try {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), timeoutMs);
-      const res = await fetch('/demo-api/state', { signal: ctrl.signal, cache: 'no-store' });
+      const res = await fetch('/api/state', { signal: ctrl.signal, cache: 'no-store' });
       clearTimeout(t);
       if (!res.ok) return null;
       const body = (await res.json()) as Db;
@@ -92,10 +96,24 @@ export function createMockApi(): SecondShelfApi {
     }
   }
 
-  async function pull() {
-    if (mode !== 'live' || pending > 0) return;
+  async function pull(force = false) {
+    if (mode !== 'live' || (pending > 0 && !force)) return;
     const fresh = await fetchState();
-    if (fresh && pending === 0 && fresh.version !== db.version) set(fresh);
+    if (fresh && (force || pending === 0) && fresh.version !== db.version) set(fresh);
+  }
+
+  /** Bank-backed steps run on the server only. */
+  async function post<T>(url: string, body?: unknown): Promise<T> {
+    if (mode !== 'live') throw new ApiError('Needs a connection to the SecondShelf server.');
+    let res: Response;
+    try {
+      res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) });
+    } catch {
+      throw new ApiError('No connection. Try again.');
+    }
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new ApiError(json.error ?? 'Something went wrong.');
+    return json as T;
   }
 
   // Try the shared endpoint; fall back to this browser only.
@@ -105,6 +123,13 @@ export function createMockApi(): SecondShelfApi {
     mode = 'live';
     set(remote);
     setInterval(pull, POLL_MS);
+    // Pushed updates: pull as soon as the server says something changed.
+    if (typeof EventSource !== 'undefined') {
+      const es = new EventSource('/api/events');
+      es.onmessage = (e) => {
+        if (Number(e.data) !== db.version) void pull();
+      };
+    }
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') void pull();
     });
@@ -120,7 +145,7 @@ export function createMockApi(): SecondShelfApi {
 
     pending++;
     try {
-      const res = await fetch('/demo-api/action', {
+      const res = await fetch('/api/action', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action }),
@@ -243,37 +268,6 @@ export function createMockApi(): SecondShelfApi {
       return findBatch(batchId);
     },
 
-    async placeOrder(input: OrderInput, onStage?: (s: PayStage) => void, signal?: AbortSignal) {
-      const b = findBatch(input.batchId);
-      if (!b.listing) throw new ApiError('This offer has ended.');
-      onStage?.('connecting');
-      await stage(650, 850);
-      if (signal?.aborted) throw new ApiError('Payment cancelled.');
-      onStage?.('authorising');
-      await stage(700, 900);
-      const deliveryFee = input.fulfilment === 'delivery' ? 1500 : 0;
-      const n = 24000 + Math.floor(Math.random() * 6000);
-      const order: Order = {
-        id: `o-${rand()}`,
-        ref: `SS-${n}`,
-        batchId: b.id,
-        productId: b.productId,
-        sellerId: b.sellerId,
-        buyerId: BUYER.id,
-        qty: input.qty,
-        unitPrice: b.listing.unitPrice,
-        deliveryFee,
-        total: b.listing.unitPrice * input.qty + deliveryFee,
-        fulfilment: input.fulfilment,
-        status: 'paid',
-        paidAt: new Date().toISOString(),
-        distanceKm: BUYER.distanceKm,
-      };
-      await dispatch({ type: 'order/place', at: order.paidAt, today: today(), order });
-      onStage?.('confirmed');
-      return order;
-    },
-
     async confirmHandover(ref) {
       await stage(500, 700);
       const clean = ref.trim().toUpperCase();
@@ -283,17 +277,34 @@ export function createMockApi(): SecondShelfApi {
       return o;
     },
 
-    async sharePassport() {
-      await stage(800, 1000);
-      const at = new Date().toISOString();
-      await dispatch({ type: 'passport/share', at });
-      return at;
+    startCheckout: (input: OrderInput) => post<CheckoutStart>('/api/payments/checkout', input),
+
+    async verifyPayment(reference: string) {
+      const r = await post<PaymentResult>(`/api/payments/${encodeURIComponent(reference)}/verify`);
+      if (r.status === 'paid') await pull(true);
+      return r;
+    },
+
+    enquirePayout: (orderId: string) => post<PayoutPreview>(`/api/payouts/${encodeURIComponent(orderId)}/enquire`),
+
+    async sendPayout(orderId: string) {
+      const p = await post<Payout>(`/api/payouts/${encodeURIComponent(orderId)}/send`);
+      await pull(true);
+      return p;
+    },
+
+    createPassportConsent: () => post<{ consentId: string; accountNumber: string }>('/api/passport/consent'),
+
+    async authorisePassportConsent(consentId: string, otp: string) {
+      const s = await post<BankStatement>(`/api/passport/consent/${encodeURIComponent(consentId)}/authorise`, { otp });
+      await pull(true);
+      return s;
     },
 
     async resetDemo() {
       if (mode === 'live') {
         try {
-          const res = await fetch('/demo-api/reset', { method: 'POST' });
+          const res = await fetch('/api/reset', { method: 'POST' });
           if (res.ok) {
             set((await res.json()) as Db);
             return;

@@ -22,3 +22,7 @@ kubeconfig*
 *.key
 secrets/
 docs/forge-sandbox-guide.pdf
+
+# Local SQLite data
+.data/
+dist-server/

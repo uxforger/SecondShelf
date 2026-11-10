@@ -64,6 +64,35 @@ export interface Batch {
 }
 
 export type OrderStatus = 'paid' | 'handed_over';
+
+/** Money sent to the distributor's bank account after handover. */
+export interface Payout {
+  status: 'successful' | 'pending' | 'failed' | 'unknown';
+  accountName: string;
+  accountNumber: string;
+  bankName: string;
+  amount: number;
+  fee?: number;
+  vat?: number;
+  stampDuty?: number;
+  totalDebit?: number;
+  reference: string;
+  sessionId?: string;
+  at: string;
+}
+
+/** A bank statement read through open-banking consent. */
+export interface BankStatement {
+  consentId: string;
+  accountNumber: string;
+  accountName?: string;
+  transactions: number;
+  credits: number;
+  debits: number;
+  from?: string;
+  to?: string;
+  at: string;
+}
 export type Fulfilment = 'pickup' | 'delivery';
 
 export interface Order {
@@ -83,9 +112,12 @@ export interface Order {
   paidAt: string;
   handedOverAt?: string;
   distanceKm: number;
+  payout?: Payout;
+  /** Bank merchant fee on the collection, read from verify. */
+  bankFee?: number;
 }
 
-export type ActivityKind = 'added' | 'listed' | 'paid' | 'handed_over' | 'donated' | 'collected' | 'shared';
+export type ActivityKind = 'added' | 'listed' | 'paid' | 'handed_over' | 'donated' | 'collected' | 'shared' | 'paid_out';
 
 export interface Activity {
   id: string;
@@ -113,6 +145,7 @@ export interface Db {
   orders: Order[];
   activity: Activity[];
   passportSharedAt?: string;
+  passportStatement?: BankStatement;
 }
 
 export interface Session {
@@ -126,7 +159,25 @@ export interface Session {
    ------------------------------------------------------------------ */
 
 export type ListStage = 'saving' | 'notifying' | 'done';
-export type PayStage = 'connecting' | 'authorising' | 'confirmed';
+export interface CheckoutStart {
+  reference: string;
+  /** Hosted Access Bank checkout page. */
+  paymentUrl: string;
+  amount: number;
+}
+
+export interface PaymentResult {
+  status: 'paid' | 'pending' | 'failed';
+  order?: Order;
+  message?: string;
+}
+
+export interface PayoutPreview {
+  accountName: string;
+  accountNumber: string;
+  bankName: string;
+  amount: number;
+}
 
 export interface NewBatchInput {
   barcode: string;
@@ -161,10 +212,17 @@ export interface SecondShelfApi {
   unlistBatch(batchId: string): Promise<Batch>;
   donateBatch(batchId: string): Promise<Batch>;
   collectDonation(batchId: string): Promise<Batch>;
-  /** Can be cancelled until the bank starts authorising. */
-  placeOrder(input: OrderInput, onStage?: (s: PayStage) => void, signal?: AbortSignal): Promise<Order>;
+  /** Creates the bank checkout. The order exists only after verifyPayment says paid. */
+  startCheckout(input: OrderInput): Promise<CheckoutStart>;
+  /** Always asks the bank before marking anything paid. */
+  verifyPayment(reference: string): Promise<PaymentResult>;
+  /** Name enquiry for the distributor's payout account. */
+  enquirePayout(orderId: string): Promise<PayoutPreview>;
+  sendPayout(orderId: string): Promise<Payout>;
+  /** Open-banking consent for the Passport; authorise with the OTP. */
+  createPassportConsent(): Promise<{ consentId: string; accountNumber: string }>;
+  authorisePassportConsent(consentId: string, otp: string): Promise<BankStatement>;
   confirmHandover(ref: string): Promise<Order>;
-  sharePassport(): Promise<string>;
   resetDemo(): Promise<void>;
 }
 

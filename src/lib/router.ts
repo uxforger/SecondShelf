@@ -12,6 +12,13 @@ export interface RouteState {
   key: number;
 }
 
+// Coming back from the bank's hosted checkout: /pay/return?reference=SS-123&status=...
+// becomes the in-app route #/pay/SS-123, which always verifies with the bank.
+if (window.location.pathname === '/pay/return') {
+  const ref = new URLSearchParams(window.location.search).get('reference') ?? '';
+  history.replaceState(null, '', `/#/pay/${encodeURIComponent(ref)}`);
+}
+
 let depth = (history.state?.depth as number | undefined) ?? 0;
 let state: RouteState = { path: readPath(), dir: 0, key: 0 };
 const listeners = new Set<() => void>();
