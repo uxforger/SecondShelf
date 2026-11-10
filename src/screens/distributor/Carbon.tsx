@@ -104,9 +104,16 @@ export function Carbon(_: { session: Session }) {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
         <div className="space-y-4 lg:col-span-7">
           <Card dark className="p-5 lg:p-6">
-            <p className="t-label flex items-center gap-1.5 text-white/75">
-              <Leaf className="size-4" /> Forge Carbon Registry · sandbox
-            </p>
+            <div className="flex items-center justify-between gap-3">
+              <p className="t-label flex items-center gap-1.5 text-white/75">
+                <Leaf className="size-4" /> {c?.registry === 'simulated' ? 'Simulated registry' : 'Forge Carbon Registry · sandbox'}
+              </p>
+              {c?.registry === 'simulated' && (
+                <Badge tone="warning" dot={false}>
+                  Simulated
+                </Badge>
+              )}
+            </div>
             <p className="mt-1 text-[1.25rem] font-semibold leading-7">{c?.projectName ?? 'SecondShelf Lagos food rescue'}</p>
             <p className="t-label mt-1 text-white/70">VM0046 · food sold or donated before expiry · Lagos</p>
             {!c && <p className="t-caption mt-3 text-amber">Registered on first report</p>}

@@ -191,6 +191,8 @@ export interface CarbonRetirement {
 }
 
 export interface CarbonState {
+  /** "sandbox" = Forge Carbon Registry; "simulated" = our mock registry (sandbox has no food-waste project type). */
+  registry?: 'sandbox' | 'simulated';
   projectId: string;
   projectName: string;
   methodology: string;

@@ -3,7 +3,8 @@ import { ApiError, type CarbonCertificate, type CarbonState, type CarbonSubmissi
 import { avoidedCo2e, DRY_SHARE, transportFor } from '../lib/carbon.ts';
 import { shortDate } from '../lib/format.ts';
 import { FOOD_BANK } from '../lib/mock/catalogue.ts';
-import { bank, BankError, DISTRIBUTOR_ACCOUNT } from './bank/index.ts';
+import { bank, BankError, DISTRIBUTOR_ACCOUNT, type BankClient } from './bank/index.ts';
+import { mockBank } from './bank/mock.ts';
 import { kvGet, kvSet, now, sql } from './db.ts';
 import { apply, getDb } from './state.ts';
 import { enquire, registerResolver, send, type TransferTarget } from './transfers.ts';
@@ -19,6 +20,16 @@ const METHODOLOGY = 'VM0046';
 /** Naira per tCO2e used when the registry doesn't price the retirement. */
 const PRICE_NGN = Number(process.env.CARBON_PRICE_NGN || 25_000);
 export const DISTRIBUTOR_SHARE = 0.6;
+
+/**
+ * The sandbox registry only accepts solar_replacing_diesel, clean_cookstoves
+ * and tree_planting projects. We won't label food rescue as one of those
+ * unless someone chooses to (CARBON_PROJECT_TYPE). Until then the registry
+ * steps run on the simulated registry and the UI says so.
+ */
+function registry(): BankClient {
+  return getDb().carbon?.registry === 'simulated' ? mockBank : bank;
+}
 const SELLER = 'biz-ade';
 
 function save(carbon: CarbonState, note?: { title: string; detail?: string; amount?: number }) {
@@ -55,16 +66,25 @@ const t3 = (n: number) => Math.round(n * 1000) / 1000;
 export async function ensureProject(): Promise<CarbonState> {
   const existing = getDb().carbon;
   if (existing?.projectId) return existing;
-  const p = await withKey('carbon_project_idem', (idempotencyKey) =>
-    bank.createCarbonProject({
-      name: PROJECT_NAME,
-      methodology: METHODOLOGY,
-      location: 'Lagos, Nigeria',
-      description: 'Packaged food sold or donated before expiry instead of being destroyed. Grouped across SecondShelf distributors.',
-      idempotencyKey,
-    }),
-  );
-  const carbon: CarbonState = { projectId: p.id, projectName: PROJECT_NAME, methodology: METHODOLOGY, createdAt: now(), submissions: [], retirements: [] };
+  const input = (idempotencyKey: string) => ({
+    name: PROJECT_NAME,
+    methodology: METHODOLOGY,
+    location: 'Lagos, Nigeria',
+    description: 'Packaged food sold or donated before expiry instead of being destroyed. Grouped across SecondShelf distributors.',
+    idempotencyKey,
+  });
+  let where: 'sandbox' | 'simulated' = bank.mode === 'mock' ? 'simulated' : 'sandbox';
+  let p: { id: string };
+  try {
+    p = await withKey('carbon_project_idem', (k) => bank.createCarbonProject(input(k)));
+  } catch (e) {
+    const typeProblem = e instanceof BankError && e.field === 'type' && !process.env.CARBON_PROJECT_TYPE;
+    if (!typeProblem) throw e;
+    console.warn('[carbon] sandbox registry has no food-waste project type; using the simulated registry');
+    where = 'simulated';
+    p = await mockBank.createCarbonProject(input(randomUUID()));
+  }
+  const carbon: CarbonState = { registry: where, projectId: p.id, projectName: PROJECT_NAME, methodology: METHODOLOGY, createdAt: now(), submissions: [], retirements: [] };
   save(carbon, { title: 'Carbon project registered', detail: `${PROJECT_NAME} · ${METHODOLOGY}` });
   return carbon;
 }
@@ -146,7 +166,7 @@ export async function submitMrv(): Promise<CarbonSubmission> {
   // Same items → same key, so a retry after a timeout replays instead of double-reporting.
   const idemName = `mrv_idem_${createHash('sha256').update(items.map((i) => i.id).join(',')).digest('hex').slice(0, 24)}`;
 
-  const r = await withKey(idemName, (idempotencyKey) => bank.submitMrv({ projectId: carbon.projectId, periodStart, periodEnd, tco2e, evidenceSummary: evidence, items, idempotencyKey }));
+  const r = await withKey(idemName, (idempotencyKey) => registry().submitMrv({ projectId: carbon.projectId, periodStart, periodEnd, tco2e, evidenceSummary: evidence, items, idempotencyKey }));
   const sub: CarbonSubmission = {
     mrvId: r.id,
     status: mrvStatus(r.status),
@@ -181,7 +201,7 @@ function verifiedNote(tco2e: number) {
 }
 
 export async function refreshMrv(mrvId: string) {
-  const r = await bank.getMrv(mrvId);
+  const r = await registry().getMrv(mrvId);
   const status = mrvStatus(r.status);
   const sub = getDb().carbon?.submissions.find((s) => s.mrvId === mrvId);
   updateSubmission(
@@ -194,7 +214,7 @@ export async function refreshMrv(mrvId: string) {
 
 /** Sandbox only: we act as the independent verifier. Labelled as such in the UI. */
 export async function approveMrv(mrvId: string) {
-  const r = await withKey(`mrv_review_${mrvId}`, (k) => bank.reviewMrv(mrvId, true, k));
+  const r = await withKey(`mrv_review_${mrvId}`, (k) => registry().reviewMrv(mrvId, true, k));
   const status = mrvStatus(r.status);
   if (status === 'verified') {
     const sub = getDb().carbon?.submissions.find((s) => s.mrvId === mrvId);
@@ -216,7 +236,7 @@ export async function retire(mrvId: string) {
   const quantity = t3(sub.creditsIssued ?? sub.tco2e);
   const beneficiary = 'Ade Foods, Mushin';
   const reason = `Food rescued before expiry, ${shortDate(sub.periodStart)} to ${shortDate(sub.periodEnd)} ${sub.periodEnd.slice(0, 4)}`;
-  const r = await withKey(`retire_${mrvId}`, (idempotencyKey) => bank.retireCredits({ projectId: c.projectId, mrvId, quantity, beneficiary, reason, idempotencyKey }));
+  const r = await withKey(`retire_${mrvId}`, (idempotencyKey) => registry().retireCredits({ projectId: c.projectId, mrvId, quantity, beneficiary, reason, idempotencyKey }));
   const valueNaira = Math.round(r.valueNaira ?? quantity * PRICE_NGN);
   const retirement = {
     certificateId: r.certificateId,
@@ -238,7 +258,7 @@ export async function certificate(id: string): Promise<CarbonCertificate> {
   const c = getDb().carbon;
   const local = c?.retirements.find((r) => r.certificateId === id);
   try {
-    const r = await bank.getCertificate(id);
+    const r = await registry().getCertificate(id);
     return {
       id: r.id,
       projectId: r.projectId ?? c?.projectId ?? '',
@@ -248,14 +268,14 @@ export async function certificate(id: string): Promise<CarbonCertificate> {
       beneficiary: r.beneficiary ?? local?.beneficiary,
       reason: r.reason ?? local?.reason,
       retiredAt: r.retiredAt ?? local?.retiredAt,
-      registry: 'Forge Carbon Registry (sandbox)',
+      registry: c?.registry === 'simulated' ? 'Simulated registry (sandbox has no food-waste type)' : 'Forge Carbon Registry (sandbox)',
       methodology: METHODOLOGY,
       source: 'registry',
     };
   } catch (e) {
     if (!local) throw e;
     console.warn(`[carbon] certificate ${id} from local record: ${(e as Error).message}`);
-    return { id, projectId: c!.projectId, projectName: c!.projectName, tco2e: local.tco2e, serial: local.serial, beneficiary: local.beneficiary, reason: local.reason, retiredAt: local.retiredAt, registry: 'Forge Carbon Registry (sandbox)', methodology: METHODOLOGY, source: 'local' };
+    return { id, projectId: c!.projectId, projectName: c!.projectName, tco2e: local.tco2e, serial: local.serial, beneficiary: local.beneficiary, reason: local.reason, retiredAt: local.retiredAt, registry: c!.registry === 'simulated' ? 'Simulated registry' : 'Forge Carbon Registry (sandbox)', methodology: METHODOLOGY, source: 'local' };
   }
 }
 

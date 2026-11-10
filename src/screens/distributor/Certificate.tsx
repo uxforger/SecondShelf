@@ -67,7 +67,7 @@ export function Certificate({ id }: { id: string }) {
                 <span className="text-[0.9375rem] font-semibold">SecondShelf</span>
                 <span className="ml-auto">
                   <Badge tone="deep" className="bg-white/12 ring-1 ring-white/20" dot={false}>
-                    {cert.source === 'registry' ? 'Registry record' : 'Local record'}
+                    {cert.registry.startsWith('Simulated') ? 'Simulated' : cert.source === 'registry' ? 'Registry record' : 'Local record'}
                   </Badge>
                 </span>
               </div>
