@@ -145,13 +145,22 @@ export const httpBank: BankClient = {
   },
 
   async createConsent(accountNumber, idempotencyKey) {
+    // The bank requires the account holder's phone on file; resolve it first.
+    let phone = process.env.CONSENT_PHONE;
+    if (!phone) {
+      const r = await call('GET', `/accounts/resolve?account_number=${encodeURIComponent(accountNumber)}`);
+      const holder = (r.account_holder ?? r.holder ?? r.customer ?? r) as Json;
+      phone = holder.phone ?? holder.phone_number ?? holder.mobile ?? holder.customer_phone ?? holder.msisdn ?? r.phone ?? r.phone_number;
+      // Field names only (never values) so a mismatch is easy to fix.
+      if (!phone) console.log(`[bank] resolve returned fields: ${Object.keys(r).join(',')}${holder !== r ? ' / holder: ' + Object.keys(holder).join(',') : ''}`);
+    }
     const d = await call(
       'POST',
       '/open-banking/consents',
       {
         account_number: accountNumber,
         // Synthetic contact for the sandbox OTP; no real personal data.
-        customer_phone: process.env.CONSENT_PHONE || '08000000193',
+        customer_phone: phone,
         scopes: ['accounts', 'balance', 'statement'],
         permissions: ['accounts', 'balance', 'statement'],
         purpose: 'SecondShelf Business Passport',
