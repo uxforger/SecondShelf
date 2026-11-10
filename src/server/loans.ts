@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { ApiError, type Loan, type LoanStatus } from '../lib/api/types.ts';
 import { metrics } from '../lib/selectors.ts';
-import { bank, BankError, DISTRIBUTOR_ACCOUNT } from './bank/index.ts';
+import { bank, BankError, LOAN_ACCOUNT, LOAN_BVN } from './bank/index.ts';
 import { kvGet, kvSet, now, sql } from './db.ts';
 import { apply, getDb } from './state.ts';
 
@@ -61,7 +61,7 @@ export async function applyForLoan(): Promise<Loan> {
   const amount = offerAmount();
   // One key per attempt; kept until a decision so a retry replays the same application.
   const r = await withKey('loan_apply_idem', (idempotencyKey) =>
-    bank.applyLoan({ accountNumber: DISTRIBUTOR_ACCOUNT, amount, tenorDays: TENOR_DAYS, purpose: 'Inventory: restock fast-moving packaged food', idempotencyKey }),
+    bank.applyLoan({ accountNumber: LOAN_ACCOUNT, bvn: LOAN_BVN, amount, tenorDays: TENOR_DAYS, purpose: 'Inventory: restock fast-moving packaged food', idempotencyKey }),
   );
   const loan: Loan = {
     id: r.id,
@@ -72,7 +72,7 @@ export async function applyForLoan(): Promise<Loan> {
     fee: r.fee,
     repaymentTotal: r.repaymentTotal,
     dueDate: r.dueDate,
-    accountNumber: DISTRIBUTOR_ACCOUNT,
+    accountNumber: LOAN_ACCOUNT,
     appliedAt: now(),
     declineReason: r.reason,
   };

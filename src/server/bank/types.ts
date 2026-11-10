@@ -125,6 +125,7 @@ export interface CertificateResult {
 
 export interface LoanInput {
   accountNumber: string;
+  bvn: string;
   amount: number;
   tenorDays: number;
   purpose: string;
