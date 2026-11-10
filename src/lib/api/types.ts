@@ -223,11 +223,15 @@ export interface Loan {
   id: string;
   status: LoanStatus;
   principal: number;
+  /** Percent per month (sandbox: interest_rate_monthly). */
   interestRate?: number;
   tenorDays?: number;
   fee?: number;
+  /** What lands in the account after fees. */
+  netDisbursement?: number;
   repaymentTotal?: number;
   dueDate?: string;
+  creditScore?: number;
   accountNumber: string;
   appliedAt: string;
   acceptedAt?: string;

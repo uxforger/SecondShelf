@@ -70,8 +70,10 @@ export async function applyForLoan(): Promise<Loan> {
     interestRate: r.interestRate,
     tenorDays: r.tenorDays ?? TENOR_DAYS,
     fee: r.fee,
+    netDisbursement: r.netDisbursement,
     repaymentTotal: r.repaymentTotal,
     dueDate: r.dueDate,
+    creditScore: r.creditScore,
     accountNumber: LOAN_ACCOUNT,
     appliedAt: now(),
     declineReason: r.reason,
@@ -91,7 +93,7 @@ export async function acceptLoan(id: string): Promise<Loan> {
   const l = mine(id);
   if (l.status !== 'offered') return l;
   const r = await withKey(`loan_accept_${id}`, (k) => bank.acceptLoan(id, k));
-  const next: Loan = { ...l, status: status(r.status) === 'offered' ? 'accepted' : status(r.status), acceptedAt: now(), repaymentTotal: r.repaymentTotal ?? l.repaymentTotal, dueDate: r.dueDate ?? l.dueDate };
+  const next: Loan = { ...l, status: status(r.status) === 'offered' ? 'accepted' : status(r.status), acceptedAt: now(), principal: r.principal ?? l.principal, interestRate: r.interestRate ?? l.interestRate, fee: r.fee ?? l.fee, netDisbursement: r.netDisbursement ?? l.netDisbursement, creditScore: r.creditScore ?? l.creditScore, repaymentTotal: r.repaymentTotal ?? l.repaymentTotal, dueDate: r.dueDate ?? l.dueDate };
   save(next, { title: 'Loan offer accepted', amount: next.principal });
   return next;
 }

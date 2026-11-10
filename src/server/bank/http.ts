@@ -71,15 +71,19 @@ function toMrv(d: Json) {
 
 function toLoan(d: Json) {
   const offer = (d.offer ?? d) as Json;
+  const next = offer.next_due as Json | string | undefined;
+  const decision = String(d.decision ?? '').toLowerCase();
   return {
-    id: String(d.id ?? d.loan_id ?? d.application_id),
-    status: String(d.status ?? 'offered').toLowerCase(),
-    principal: num(offer.principal ?? offer.amount ?? offer.approved_amount),
-    interestRate: num(offer.interest_rate ?? offer.rate),
+    id: String(d.loan_id ?? d.id ?? d.application_id),
+    status: decision === 'declined' ? 'declined' : String(d.status ?? 'offered').toLowerCase(),
+    principal: num(offer.approved_amount ?? offer.principal ?? offer.amount),
+    interestRate: num(offer.interest_rate_monthly ?? offer.interest_rate ?? offer.rate),
     tenorDays: num(offer.tenor_days ?? (offer.tenor_months !== undefined ? Number(offer.tenor_months) * 30 : offer.tenor)),
-    fee: num(offer.fee ?? offer.processing_fee),
-    repaymentTotal: num(offer.total_repayment ?? offer.repayment_amount ?? offer.total_payable),
-    dueDate: offer.due_date ?? offer.maturity_date,
+    fee: num(offer.management_fee ?? offer.fee ?? offer.processing_fee),
+    netDisbursement: num(offer.net_disbursement),
+    repaymentTotal: num(offer.total_repayable ?? offer.total_repayment ?? offer.repayment_amount),
+    dueDate: typeof next === 'string' ? next : (next?.due_date ?? next?.date ?? offer.due_date ?? offer.maturity_date),
+    creditScore: num(offer.credit_score),
     reason: d.decline_reason ?? d.reason,
     raw: d,
   };

@@ -109,8 +109,10 @@ export function LoanSheet({ open, onClose, verifiedSales }: { open: boolean; onC
             <p className="t-label text-muted">Offer</p>
             <p className="num mt-1 text-[2rem] font-semibold leading-[2.375rem] tracking-[-0.01em] text-deep">{naira(loan.principal)}</p>
             <dl className="mt-4 divide-y divide-hairline">
-              {loan.interestRate !== undefined && <Row label="Interest" value={`${loan.interestRate}%`} />}
+              {loan.interestRate !== undefined && <Row label="Interest" value={`${loan.interestRate}% a month`} />}
               {loan.fee !== undefined && <Row label="Fee" value={naira(loan.fee)} />}
+              {loan.netDisbursement !== undefined && <Row label="You receive" value={naira(loan.netDisbursement)} />}
+              {loan.creditScore !== undefined && <Row label="Credit score" value={String(loan.creditScore)} />}
               {loan.repaymentTotal !== undefined && <Row label="You repay" value={naira(loan.repaymentTotal)} />}
               <Row label="Due" value={loan.dueDate ? shortDate(loan.dueDate) : `${loan.tenorDays ?? 30} days`} />
               <Row label="Paid into" value={`Xtradot Bank ···${loan.accountNumber.slice(-4)}`} />
@@ -126,7 +128,7 @@ export function LoanSheet({ open, onClose, verifiedSales }: { open: boolean; onC
           <motion.div key="d" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={spring} className="flex flex-col items-center py-6 text-center">
             <SuccessMark size={80} />
             <p className="t-title mt-5 text-deep">Funds sent</p>
-            <p className="num mt-1 text-[1.5rem] font-semibold text-deep">{naira(loan.principal)}</p>
+            <p className="num mt-1 text-[1.5rem] font-semibold text-deep">{naira(loan.netDisbursement ?? loan.principal)}</p>
             <p className="t-label mt-1 text-muted">To Xtradot Bank ···{loan.accountNumber.slice(-4)}</p>
           </motion.div>
         )}

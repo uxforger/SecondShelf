@@ -139,8 +139,10 @@ export interface LoanResult {
   interestRate?: number;
   tenorDays?: number;
   fee?: number;
+  netDisbursement?: number;
   repaymentTotal?: number;
   dueDate?: string;
+  creditScore?: number;
   reason?: string;
   raw: unknown;
 }
