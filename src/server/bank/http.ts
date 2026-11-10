@@ -76,7 +76,7 @@ function toLoan(d: Json) {
     status: String(d.status ?? 'offered').toLowerCase(),
     principal: num(offer.principal ?? offer.amount ?? offer.approved_amount),
     interestRate: num(offer.interest_rate ?? offer.rate),
-    tenorDays: num(offer.tenor_days ?? offer.tenor),
+    tenorDays: num(offer.tenor_days ?? (offer.tenor_months !== undefined ? Number(offer.tenor_months) * 30 : offer.tenor)),
     fee: num(offer.fee ?? offer.processing_fee),
     repaymentTotal: num(offer.total_repayment ?? offer.repayment_amount ?? offer.total_payable),
     dueDate: offer.due_date ?? offer.maturity_date,
@@ -316,7 +316,7 @@ export const httpBank: BankClient = {
     const d = await call(
       'POST',
       '/loans/applications',
-      { applicant_account: i.accountNumber, account_number: i.accountNumber, bvn: i.bvn, amount: Number(i.amount.toFixed(2)), tenor_days: i.tenorDays, purpose: i.purpose, product: 'inventory' },
+      { applicant_account: i.accountNumber, account_number: i.accountNumber, bvn: i.bvn, amount: Number(i.amount.toFixed(2)), tenor_months: Math.min(12, Math.max(1, Math.round(i.tenorDays / 30))), purpose: i.purpose, product: 'inventory' },
       i.idempotencyKey,
     );
     shape('loan apply', d);
