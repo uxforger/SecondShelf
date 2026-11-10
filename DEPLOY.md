@@ -86,10 +86,11 @@ kubectl rollout restart deployment/app # restart (e.g. after the team key is rot
 | `DEMO_MODE` | `false` in the cluster | `true` = mock bank (same flows, no sandbox calls). Use if the sandbox is down on demo day. |
 | `PUBLIC_URL` | `https://team19.xtradot.co` | Where the hosted checkout sends buyers back. |
 | `WEBHOOK_URL` | `http://app.team19.svc.cluster.local/api/hooks/forge` | Registered once with the bank on first start. |
-| `DISTRIBUTOR_ACCOUNT` | `0123456793` | Mama Nkechi Provisions Ltd, receives payouts and is read for the Passport. |
+| `DISTRIBUTOR_ACCOUNT` | `0123456790` | The one demo trader: Babatunde Olumide Adeyemi trading as Ade Foods. Receives payouts, is read for the Passport, applies for the loan. |
+| `BANK_MERCHANT_ID` | `mer_204` | Collections merchant (onboarding isn't available in the sandbox). |
 | `SETTLEMENT_ACCOUNT` | `0123456789` | Funds payouts (order payouts and carbon share). |
-| `LOAN_ACCOUNT` / `LOAN_BVN` | `0123456790` / `22200000002` | Stock-loan applicant (owner; the bank needs a BVN). |
-| `CONSENT_PHONE` | unset | Holder phone for real open-banking consent; unset = simulated, labelled. |
+| `LOAN_ACCOUNT` / `LOAN_BVN` | same as `DISTRIBUTOR_ACCOUNT` / `22200000002` | Stock-loan applicant (the bank needs a BVN). |
+| `CONSENT_PHONE` | unset | Overrides the holder phone from spec v2 test data (`+2348051234502` for `0123456790`). |
 | `CARBON_PROJECT_TYPE` | unset | Set to a sandbox type to use the real carbon registry; unset = simulated, labelled. |
 | `CARBON_PRICE_NGN` | `25000` | Credit value per tCO₂e when the registry doesn't price it. |
 

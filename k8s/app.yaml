@@ -40,6 +40,9 @@ spec:
             - { name: PUBLIC_URL, value: "https://team19.xtradot.co" }
             - { name: WEBHOOK_URL, value: "http://app.team19.svc.cluster.local/api/hooks/forge" }
             - { name: DATA_DIR, value: "/data" }
+            # Collections merchant. /merchants/onboard is not in the sandbox build yet, so this
+            # is the sandbox's pre-provisioned merchant; see CHANGES.md.
+            - { name: BANK_MERCHANT_ID, value: "mer_204" }
           # Team key (GATEWAY_KEY) comes from the pre-provisioned secret.
           envFrom:
             - secretRef: { name: huawei-gateway, optional: true }
