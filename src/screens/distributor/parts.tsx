@@ -1,4 +1,4 @@
-import { HandHeart, Leaf, PackagePlus, ReceiptText, Share2, Tag, Truck } from 'lucide-react';
+import { HandHeart, Landmark, Leaf, PackagePlus, ReceiptText, Share2, Tag, Truck } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { ReactNode } from 'react';
 import { Badge, ExpiryBadge } from '../../components/ui/Badge';
@@ -130,6 +130,7 @@ const ACTIVITY_ICON: Record<Activity['kind'], ReactNode> = {
   donated: <Truck className="size-[18px]" />,
   collected: <Leaf className="size-[18px]" />,
   shared: <Share2 className="size-[18px]" />,
+  paid_out: <Landmark className="size-[18px]" />,
 };
 
 export function ActivityFeed({ items, limit = 8 }: { items: Activity[]; limit?: number }) {

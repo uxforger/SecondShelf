@@ -1,6 +1,8 @@
 import { QrCode, ReceiptText } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { BottomSheet } from '../../components/ui/BottomSheet';
+import { PayoutCard } from './Payout';
 import { Page } from '../../components/layout/Page';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
@@ -21,6 +23,10 @@ export function Sales({ session }: { session: Session }) {
   const orders = useMemo(() => ordersFor(db, session.businessId), [db, session.businessId]);
   const waiting = orders.filter((o) => o.status === 'paid');
   const done = orders.filter((o) => o.status === 'handed_over').slice(0, 8);
+  const [payoutId, setPayoutId] = useState<string | null>(null);
+  const payoutOrder = payoutId ? db.orders.find((o) => o.id === payoutId) ?? null : null;
+  // Only sales made in this run need a payout; seeded history was settled before.
+  const needsPayout = (o: Order) => !!db.startedAt && (o.handedOverAt ?? '') >= db.startedAt;
   const listed = offers(db, today()).filter((v) => v.batch.sellerId === session.businessId);
 
 
@@ -96,7 +102,16 @@ export function Sales({ session }: { session: Session }) {
                         {product(db, o.productId)?.name} · {o.qty} · {ago(o.handedOverAt ?? o.paidAt)}
                       </p>
                     </div>
-                    <span className="num text-[0.9375rem] font-semibold text-deep">{naira(o.total)}</span>
+                    <span className="flex flex-col items-end gap-1">
+                      <span className="num text-[0.9375rem] font-semibold text-deep">{naira(o.total)}</span>
+                      {o.payout?.status === 'successful' ? (
+                        <Badge tone="success">Paid out</Badge>
+                      ) : needsPayout(o) ? (
+                        <button type="button" onClick={() => setPayoutId(o.id)} className="t-caption rounded-full bg-deep px-3 py-1 text-white">
+                          Pay out
+                        </button>
+                      ) : null}
+                    </span>
                   </motion.li>
                 ))}
               </AnimatePresence>
@@ -104,6 +119,9 @@ export function Sales({ session }: { session: Session }) {
           )}
         </section>
       </div>
+      <BottomSheet open={!!payoutOrder} onClose={() => setPayoutId(null)} title="Payout">
+        {payoutOrder && <PayoutCard order={payoutOrder} />}
+      </BottomSheet>
     </Page>
   );
 }

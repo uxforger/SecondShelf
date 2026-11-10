@@ -13,6 +13,7 @@ import { goBack, navigate } from '../../lib/router';
 import { parseHandoverRef } from '../../lib/scanner';
 import { business, product } from '../../lib/selectors';
 import { useDb } from '../../lib/store';
+import { PayoutCard } from './Payout';
 
 type State = { s: 'confirming'; ref: string } | { s: 'done'; order: Order } | { s: 'error'; message: string };
 
@@ -86,6 +87,9 @@ export function Handover() {
               <p className="t-label num mt-1 text-muted">
                 {business(db, done.buyerId)?.name} · {product(db, done.productId)?.name} · {done.qty}
               </p>
+              <div className="mt-6 w-full">
+                <PayoutCard order={db.orders.find((o) => o.id === done.id) ?? done} />
+              </div>
             </motion.div>
           )}
           {state?.s === 'error' && (

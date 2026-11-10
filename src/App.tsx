@@ -29,6 +29,7 @@ const Live = lazy(() => loadDistributor().then((m) => ({ default: m.Live })));
 const Shop = lazy(() => loadBuyer().then((m) => ({ default: m.Shop })));
 const ProductDetail = lazy(() => loadBuyer().then((m) => ({ default: m.ProductDetail })));
 const Orders = lazy(() => loadBuyer().then((m) => ({ default: m.Orders })));
+const PaymentReturn = lazy(() => loadBuyer().then((m) => ({ default: m.PaymentReturn })));
 const Pickups = lazy(() => loadFoodBank().then((m) => ({ default: m.Pickups })));
 const Profile = lazy(() => loadShared().then((m) => ({ default: m.Profile })));
 
@@ -86,6 +87,8 @@ function resolve(session: Session, path: string): Resolved | null {
     if (clean === '/shop') return { key: clean, el: <Shop /> };
     const detail = match('/shop/:id', clean);
     if (detail) return { key: clean, el: <ProductDetail id={detail.id} session={session} />, focus: true };
+    const pay = match('/pay/:ref', clean);
+    if (pay) return { key: clean, el: <PaymentReturn reference={pay.ref} />, focus: true };
     if (clean === '/orders') return { key: '/orders', el: <Orders session={session} /> };
     const order = match('/orders/:id', clean);
     if (order) return { key: '/orders', el: <Orders session={session} openId={order.id} /> };
