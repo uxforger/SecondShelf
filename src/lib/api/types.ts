@@ -83,6 +83,8 @@ export interface Payout {
 
 /** A bank statement read through open-banking consent. */
 export interface BankStatement {
+  /** "bank" = read from the sandbox with consent; "simulated" = demo fallback. */
+  source?: 'bank' | 'simulated';
   consentId: string;
   accountNumber: string;
   accountName?: string;

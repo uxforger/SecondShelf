@@ -89,6 +89,7 @@ export class BankError extends Error {
     public code: string,
     message: string,
     public requestId?: string,
+    public field?: string,
   ) {
     super(message);
     this.name = 'BankError';

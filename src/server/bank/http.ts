@@ -1,13 +1,4 @@
-import { randomUUID } from 'node:crypto';
 import { BankError, type BankClient, type PaymentStatus, type StatementSummary, type TransferResult, type TransferStatus } from './types.ts';
-
-/** Synthetic sandbox fixtures (guide 5.4): individuals whose phone BVN verification returns. */
-const KYC: Record<string, { bvn: string; first: string; last: string; dob: string }> = {
-  '0123456789': { bvn: '22200000001', first: 'Adaeze', last: 'Okonkwo', dob: '1998-04-12' },
-  '0123456790': { bvn: '22200000002', first: 'Babatunde', last: 'Adeyemi', dob: '1985-09-30' },
-  '0123456791': { bvn: '22200000003', first: 'Musa', last: 'Abdullahi', dob: '1992-01-17' },
-  '0123456792': { bvn: '22200000004', first: 'Efosa', last: 'Osagie', dob: '2001-06-05' },
-};
 
 const BASE = process.env.BANK_API_BASE || 'http://bank-api.ingress-apisix.svc.cluster.local/v1';
 
@@ -48,7 +39,7 @@ async function call(method: 'GET' | 'POST', path: string, body?: Json, idempoten
   const json = (await res.json().catch(() => null)) as Json | null;
   log(method, path, res.status, json?.request_id, json?.error?.code, json?.error?.field, json?.error?.message);
   if (!res.ok || json?.status === 'error') {
-    throw new BankError(res.status, json?.error?.code ?? `HTTP_${res.status}`, json?.error?.message ?? res.statusText, json?.request_id);
+    throw new BankError(res.status, json?.error?.code ?? `HTTP_${res.status}`, json?.error?.message ?? res.statusText, json?.request_id, json?.error?.field);
   }
   return (json?.data ?? json ?? {}) as Json;
 }
@@ -154,23 +145,10 @@ export const httpBank: BankClient = {
   },
 
   async createConsent(accountNumber, idempotencyKey) {
-    // The bank requires the account holder's phone on file; resolve it first.
-    let phone = process.env.CONSENT_PHONE;
-    if (!phone) {
-      const r = await call('GET', `/accounts/resolve?account_number=${encodeURIComponent(accountNumber)}&bank_code=${process.env.BANK_NIP_CODE || '000014'}`);
-      const holder = (r.account_holder ?? r.holder ?? r.customer ?? r) as Json;
-      phone = holder.phone ?? holder.phone_number ?? holder.mobile ?? holder.customer_phone ?? holder.msisdn ?? r.phone ?? r.phone_number;
-      // Field names only (never values) so a mismatch is easy to fix.
-      if (!phone) console.log(`[bank] resolve returned fields: ${Object.keys(r).join(',')}${holder !== r ? ' / holder: ' + Object.keys(holder).join(',') : ''}`);
-    }
-    // Individuals: the phone on file comes back from BVN verification (sandbox fixtures, guide 5.4).
-    const kyc = KYC[accountNumber];
-    if (!phone && kyc) {
-      const v = await call('POST', '/identity/bvn/verify', { bvn: kyc.bvn, first_name: kyc.first, last_name: kyc.last, date_of_birth: kyc.dob, dob: kyc.dob }, randomUUID());
-      const who = (v.customer ?? v.holder ?? v.identity ?? v) as Json;
-      phone = who.phone ?? who.phone_number ?? who.mobile ?? who.msisdn ?? v.phone ?? v.phone_number;
-      if (!phone) console.log(`[bank] bvn verify returned fields: ${Object.keys(v).join(',')}${who !== v ? ' / ' + Object.keys(who).join(',') : ''}`);
-    }
+    // The bank checks this against the holder's phone on file. It isn't in the
+    // participant guide, so it's configured (CONSENT_PHONE); see CHANGES.md.
+    const phone = process.env.CONSENT_PHONE;
+    if (!phone) throw new BankError(422, 'CONSENT_PHONE_MISSING', 'Consent phone not configured.');
     const d = await call(
       'POST',
       '/open-banking/consents',

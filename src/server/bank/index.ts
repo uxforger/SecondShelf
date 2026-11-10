@@ -11,10 +11,10 @@ export const DEMO_MODE = process.env.DEMO_MODE === 'true' || !process.env.GATEWA
 export const bank: BankClient = DEMO_MODE ? mockBank : httpBank;
 
 /** SecondShelf's settlement account (team-owned sandbox account), source of payouts. */
-export const SETTLEMENT_ACCOUNT = process.env.SETTLEMENT_ACCOUNT || '0123456789';
+export const SETTLEMENT_ACCOUNT = process.env.SETTLEMENT_ACCOUNT || '0123456790';
 /** The demo distributor's receiving account: Mama Nkechi Provisions Ltd. */
 export const DISTRIBUTOR_ACCOUNT = process.env.DISTRIBUTOR_ACCOUNT || '0123456793';
-/** Account read (with consent) for the Business Passport: Babatunde Adeyemi, the "Ade" of Ade Foods. */
-export const PASSPORT_ACCOUNT = process.env.PASSPORT_ACCOUNT || '0123456790';
+/** Account read (with consent) for the Business Passport. */
+export const PASSPORT_ACCOUNT = process.env.PASSPORT_ACCOUNT || DISTRIBUTOR_ACCOUNT;
 
 export * from './types.ts';

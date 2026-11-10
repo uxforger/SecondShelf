@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { ApiError, type BankStatement, type Fulfilment, type Order, type Payout } from '../lib/api/types.ts';
 import { BUYER } from '../lib/mock/catalogue.ts';
+import { mockBank } from './bank/mock.ts';
 import { bank, BankError, DEMO_MODE, DISTRIBUTOR_ACCOUNT, PASSPORT_ACCOUNT, SETTLEMENT_ACCOUNT, type TransferResult } from './bank/index.ts';
 import { kvGet, kvSet, now, sql } from './db.ts';
 import { apply, dryRun, getDb } from './state.ts';
@@ -264,18 +265,31 @@ function recordTransfer(o: Order, row: PayoutRow, res: TransferResult): Payout {
 /* 4. Share Passport: open-banking consent → OTP → statement           */
 /* ------------------------------------------------------------------ */
 
+/** Real consent when possible; the simulated bank only when the sandbox can't take it. */
+let consentBank = bank;
+
 export async function createPassportConsent() {
-  const c = await bank.createConsent(PASSPORT_ACCOUNT, randomUUID());
+  consentBank = bank;
+  let c: { id: string; status: string };
+  try {
+    c = await bank.createConsent(PASSPORT_ACCOUNT, randomUUID());
+  } catch (e) {
+    const phoneProblem = e instanceof BankError && (e.code === 'CONSENT_PHONE_MISSING' || e.field === 'customer_phone');
+    if (!phoneProblem || bank.mode === 'mock') throw e;
+    console.warn('[passport] sandbox consent needs the holder phone (CONSENT_PHONE); using the simulated bank');
+    consentBank = mockBank;
+    c = await mockBank.createConsent(PASSPORT_ACCOUNT, randomUUID());
+  }
   sql.prepare('INSERT OR REPLACE INTO consents (id, account_number, status, created_at) VALUES (?, ?, ?, ?)').run(c.id, PASSPORT_ACCOUNT, c.status, now());
   return { consentId: c.id, accountNumber: PASSPORT_ACCOUNT };
 }
 
 export async function authorisePassportConsent(consentId: string, otp: string): Promise<BankStatement> {
   if (!/^\d{6}$/.test(otp)) throw new ApiError('Enter the 6-digit code.');
-  const a = await bank.authoriseConsent(consentId, otp);
+  const a = await consentBank.authoriseConsent(consentId, otp);
   sql.prepare('UPDATE consents SET status = ? WHERE id = ?').run(a.status, consentId);
-  const s = await bank.statement(PASSPORT_ACCOUNT, consentId);
-  const statement: BankStatement = { ...s, consentId, at: now() };
+  const s = await consentBank.statement(PASSPORT_ACCOUNT, consentId);
+  const statement: BankStatement = { ...s, consentId, at: now(), source: consentBank.mode === 'mock' ? 'simulated' : 'bank' };
   apply({ type: 'passport/bank', at: statement.at, statement });
   return statement;
 }

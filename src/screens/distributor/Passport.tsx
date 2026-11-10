@@ -105,7 +105,7 @@ export function Passport({ session }: { session: Session }) {
             <Card className="p-5 lg:p-6">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="t-heading text-deep">Bank-verified</h2>
-                <Badge tone="success">Access Bank</Badge>
+                {statement.source === 'simulated' ? <Badge tone="warning">Simulated</Badge> : <Badge tone="success">Access Bank</Badge>}
               </div>
               <p className="t-label mt-1 text-muted">
                 {statement.accountName ?? 'Business account'} ···{statement.accountNumber.slice(-4)} · read with consent {shortDate(statement.at)}
