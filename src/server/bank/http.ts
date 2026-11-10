@@ -56,6 +56,8 @@ function shape(what: string, d: Json) {
   console.log(`[bank] ${what} fields: ${Object.keys(d ?? {}).join(',')}`);
 }
 
+const pct = (v?: number) => (v === undefined ? undefined : v > 0 && v < 1 ? Math.round(v * 10000) / 100 : v);
+
 const round3 = (n: number) => Math.round(n * 1000) / 1000;
 
 function toMrv(d: Json) {
@@ -77,7 +79,8 @@ function toLoan(d: Json) {
     id: String(d.loan_id ?? d.id ?? d.application_id),
     status: decision === 'declined' ? 'declined' : String(d.status ?? 'offered').toLowerCase(),
     principal: num(offer.approved_amount ?? offer.principal ?? offer.amount),
-    interestRate: num(offer.interest_rate_monthly ?? offer.interest_rate ?? offer.rate),
+    // The sandbox sends a fraction (0.03 = 3%); show a percentage.
+    interestRate: pct(num(offer.interest_rate_monthly ?? offer.interest_rate ?? offer.rate)),
     tenorDays: num(offer.tenor_days ?? (offer.tenor_months !== undefined ? Number(offer.tenor_months) * 30 : offer.tenor)),
     fee: num(offer.management_fee ?? offer.fee ?? offer.processing_fee),
     netDisbursement: num(offer.net_disbursement),

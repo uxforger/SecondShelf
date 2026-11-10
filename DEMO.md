@@ -18,3 +18,24 @@ Printing tips:
 - If the camera struggles (glare, low light), tap **Enter code** and type the 13 digits. Same result.
 
 Regenerate the SVGs with `node scripts/barcodes.mjs`.
+
+# Phone test script (sandbox build)
+
+Open the same link on both phones and the laptop. Before the demo: Profile → **Reset** on any device.
+
+**Phone 1 (Distributor) · Phone 2 (Buyer) · Laptop (Distributor → Overview → Present live)**
+
+1. **Scan** (Phone 1): Scan → Enter code `2006001000030` → expiry 4 weeks out → **Save**. The "Milk powder · 4 weeks left" alert drops in.
+2. **List** (Phone 1): tap the alert → **List now**. *Phone 2* gets "New near you · Milk powder".
+3. **Pay** (Phone 2): tap the banner → **Buy** → **Pay with bank** → on the bank page tap **Pay with test card**. You land back on "Paid!" with a QR code. *(If the URL still shows a Cloudflare login first, sign in and you'll return to the verify screen.)*
+4. **Handover** (Phone 1): Sales → **Confirm** → scan Phone 2's QR (or Enter code `SS-…`) → "Handed over" → **Pay out**. *Phone 2* flips to Handed over.
+5. **Carbon** (Phone 1): Passport → **Open carbon** (laptop: sidebar → Carbon)
+   - **Submit MRV** → "Under review"
+   - **Approve as verifier** (sandbox) → Verified
+   - **Retire** → certificate opens → **Done**
+   - **Pay out** the 60% share → "Carbon share paid"
+   - The dashboard's Carbon registry card shows Submitted · Verified · Retired · Paid out.
+6. **Stock loan** (Phone 1): Passport → **Get stock loan** → **Apply** → offer (rate, fee, what you receive, credit score) → **Accept** → "Funds sent".
+7. **Passport** (Phone 1): **Share with bank** → **Share** → code `123456` → **Authorise** (simulated until we have the holder phone).
+
+Real sandbox: payment, payout, carbon share transfer, loan. Simulated and labelled: carbon registry records, Passport consent.

@@ -86,8 +86,12 @@ kubectl rollout restart deployment/app # restart (e.g. after the team key is rot
 | `DEMO_MODE` | `false` in the cluster | `true` = mock bank (same flows, no sandbox calls). Use if the sandbox is down on demo day. |
 | `PUBLIC_URL` | `https://team19.xtradot.co` | Where the hosted checkout sends buyers back. |
 | `WEBHOOK_URL` | `http://app.team19.svc.cluster.local/api/hooks/forge` | Registered once with the bank on first start. |
-| `SETTLEMENT_ACCOUNT` | `0123456790` | SecondShelf's sandbox account that funds payouts. |
 | `DISTRIBUTOR_ACCOUNT` | `0123456793` | Mama Nkechi Provisions Ltd, receives payouts and is read for the Passport. |
+| `SETTLEMENT_ACCOUNT` | `0123456789` | Funds payouts (order payouts and carbon share). |
+| `LOAN_ACCOUNT` / `LOAN_BVN` | `0123456790` / `22200000002` | Stock-loan applicant (owner; the bank needs a BVN). |
+| `CONSENT_PHONE` | unset | Holder phone for real open-banking consent; unset = simulated, labelled. |
+| `CARBON_PROJECT_TYPE` | unset | Set to a sandbox type to use the real carbon registry; unset = simulated, labelled. |
+| `CARBON_PRICE_NGN` | `25000` | Credit value per tCO₂e when the registry doesn't price it. |
 
 To flip to mock quickly: `kubectl set env deployment/app DEMO_MODE=true` (and back with `false`).
 
