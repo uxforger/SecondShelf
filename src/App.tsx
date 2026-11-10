@@ -3,7 +3,9 @@ import { forwardRef, lazy, Suspense, useEffect, useLayoutEffect, type ReactNode 
 import { homeFor } from './components/layout/nav';
 import { Sidebar } from './components/layout/Sidebar';
 import { TabBar } from './components/layout/TabBar';
+import { Banners } from './components/ui/Banners';
 import { Toasts } from './components/ui/Feedback';
+import { useLiveAlerts } from './lib/useLiveAlerts';
 import type { Session } from './lib/api';
 import { pageVariants, spring } from './lib/motion';
 import { match, navigate, useRoute } from './lib/router';
@@ -23,6 +25,7 @@ const Scan = lazy(() => loadDistributor().then((m) => ({ default: m.Scan })));
 const Sales = lazy(() => loadDistributor().then((m) => ({ default: m.Sales })));
 const Handover = lazy(() => loadDistributor().then((m) => ({ default: m.Handover })));
 const Passport = lazy(() => loadDistributor().then((m) => ({ default: m.Passport })));
+const Live = lazy(() => loadDistributor().then((m) => ({ default: m.Live })));
 const Shop = lazy(() => loadBuyer().then((m) => ({ default: m.Shop })));
 const ProductDetail = lazy(() => loadBuyer().then((m) => ({ default: m.ProductDetail })));
 const Orders = lazy(() => loadBuyer().then((m) => ({ default: m.Orders })));
@@ -49,6 +52,8 @@ interface Resolved {
   el: ReactNode;
   /** Full-screen task: hide the tab bar. */
   focus?: boolean;
+  /** Projector view: no sidebar, no banners. */
+  stage?: boolean;
 }
 
 function resolve(session: Session, path: string): Resolved | null {
@@ -72,6 +77,8 @@ function resolve(session: Session, path: string): Resolved | null {
         return { key: clean, el: <Handover />, focus: true };
       case '/passport':
         return { key: clean, el: <Passport session={session} /> };
+      case '/live':
+        return { key: clean, el: <Live session={session} />, focus: true, stage: true };
     }
   }
 
@@ -113,6 +120,7 @@ function AppShell({ session }: { session: Session }) {
   const route = useRoute();
   const desktop = useDesktop();
   const resolved = resolve(session, route.path);
+  useLiveAlerts(session);
 
   useEffect(() => {
     if (!resolved) navigate(homeFor(session.role, desktop), { replace: true });
@@ -126,8 +134,8 @@ function AppShell({ session }: { session: Session }) {
 
   return (
     <div className="min-h-dvh">
-      <Sidebar session={session} path={route.path} />
-      <div className="relative lg:pl-[248px]">
+      {!resolved.stage && <Sidebar session={session} path={route.path} />}
+      <div className={`relative ${resolved.stage ? '' : 'lg:pl-[248px]'}`}>
         <LayoutGroup>
           <AnimatePresence mode="popLayout" initial={false} custom={route.dir}>
             <PageFrame key={resolved.key} dir={route.dir}>
@@ -138,6 +146,7 @@ function AppShell({ session }: { session: Session }) {
       </div>
       {!resolved.focus && <TabBar role={session.role} path={route.path} />}
       <Toasts aboveTabBar={!desktop && !resolved.focus} />
+      {!resolved.stage && <Banners />}
     </div>
   );
 }

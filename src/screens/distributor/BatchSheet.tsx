@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { ExpiryBadge } from '../../components/ui/Badge';
 import { BottomSheet } from '../../components/ui/BottomSheet';
 import { Button, IconButton } from '../../components/ui/Button';
-import { CountUp, ProgressSteps } from '../../components/ui/Feedback';
+import { Figure, ProgressSteps } from '../../components/ui/Feedback';
 import { Photo } from '../../components/ui/Photo';
 import { api, ApiError } from '../../lib/api';
 import { FOOD_BANK } from '../../lib/mock/catalogue';
@@ -18,7 +18,7 @@ type Mode = 'detail' | 'list' | 'listing' | 'donate';
 
 const LIST_STEPS = [{ label: 'Saving' }, { label: 'Notifying buyers nearby' }, { label: 'Listed' }];
 
-export function BatchSheet({ view, onClose }: { view: BatchView | null; onClose: () => void }) {
+export function BatchSheet({ view, onClose, initialMode = 'detail' }: { view: BatchView | null; onClose: () => void; initialMode?: 'detail' | 'list' }) {
   const [mode, setMode] = useState<Mode>('detail');
   const [discount, setDiscount] = useState(25);
   const [step, setStep] = useState(0);
@@ -33,7 +33,7 @@ export function BatchSheet({ view, onClose }: { view: BatchView | null; onClose:
   }, [view]);
   useEffect(() => {
     if (view) {
-      setMode('detail');
+      setMode(initialMode === 'list' && canTrade(view.batch.expiry) && !view.batch.listing && !view.batch.donation ? 'list' : 'detail');
       setStep(0);
       setBusy(false);
       setDiscount(suggestedDiscount(view.days));
@@ -187,7 +187,7 @@ export function BatchSheet({ view, onClose }: { view: BatchView | null; onClose:
               <div className="mt-1 flex items-center gap-3">
                 <span className="num text-[1.125rem] leading-7 text-muted line-through decoration-1">{naira(p.price)}</span>
                 <ArrowRight className="size-5 text-muted" aria-hidden="true" />
-                <CountUp from="value" value={price} format={naira} className="text-[2rem] font-semibold leading-[2.375rem] tracking-[-0.01em] text-deep" />
+                <Figure value={price} format={naira} className="text-[2rem] font-semibold leading-[2.375rem] tracking-[-0.01em] text-deep" />
               </div>
               <label htmlFor="discount" className="mt-5 flex items-baseline justify-between">
                 <span className="t-label text-deep">Discount</span>
@@ -211,7 +211,7 @@ export function BatchSheet({ view, onClose }: { view: BatchView | null; onClose:
               </div>
             </div>
             <p className="t-label mt-4 text-center text-success-ink">
-              You recover <CountUp from="value" value={extra} format={naira} className="font-semibold" /> more than a fire sale
+              You recover <Figure value={extra} format={naira} className="font-semibold" /> more than a fire sale
             </p>
             {!tradeable && <p className="t-label mt-3 text-center text-danger">Expired stock can't be listed.</p>}
           </motion.div>

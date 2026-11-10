@@ -8,6 +8,7 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { api, DEMO_MODE, type Session } from '../../lib/api';
 import { business } from '../../lib/selectors';
+import { clearExpiryAlertFlag } from '../../lib/useLiveAlerts';
 import { setSession, toast, useDb } from '../../lib/store';
 
 export function Profile({ session }: { session: Session }) {
@@ -20,6 +21,7 @@ export function Profile({ session }: { session: Session }) {
   const reset = async () => {
     setResetting(true);
     await api.resetDemo();
+    clearExpiryAlertFlag();
     setResetting(false);
     setConfirm(false);
     toast('Demo reset', 'success');

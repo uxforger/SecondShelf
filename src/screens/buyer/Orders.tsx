@@ -1,6 +1,6 @@
 import { ReceiptText } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { Page } from '../../components/layout/Page';
 import { Badge } from '../../components/ui/Badge';
 import { BottomSheet } from '../../components/ui/BottomSheet';
@@ -10,11 +10,10 @@ import { EmptyState, SuccessMark } from '../../components/ui/Feedback';
 import { QrCode } from '../../components/ui/QrCode';
 import type { Order, Session } from '../../lib/api';
 import { clock, naira } from '../../lib/format';
-import { haptic } from '../../lib/haptics';
 import { spring } from '../../lib/motion';
 import { navigate } from '../../lib/router';
 import { business, ordersFor, product } from '../../lib/selectors';
-import { toast, useDb } from '../../lib/store';
+import { useDb } from '../../lib/store';
 import { Thumb } from '../distributor/parts';
 
 export function Orders({ session, openId }: { session: Session; openId?: string }) {
@@ -24,20 +23,6 @@ export function Orders({ session, openId }: { session: Session; openId?: string 
   const done = orders.filter((o) => o.status === 'handed_over');
   const open = openId ? orders.find((o) => o.id === openId) ?? null : null;
 
-  // Live: tell the buyer the moment the distributor confirms.
-  const prev = useRef<Map<string, Order['status']> | null>(null);
-  useEffect(() => {
-    const now = new Map(orders.map((o) => [o.id, o.status]));
-    if (prev.current) {
-      for (const o of orders) {
-        if (prev.current.get(o.id) === 'paid' && o.status === 'handed_over') {
-          haptic();
-          if (o.id !== openId) toast('Handed over', 'success');
-        }
-      }
-    }
-    prev.current = now;
-  }, [orders, openId]);
 
   const row = (o: Order) => {
     const p = product(db, o.productId);

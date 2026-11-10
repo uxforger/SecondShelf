@@ -1,4 +1,4 @@
-import { BadgeCheck, LayoutGrid, Package, ReceiptText, ScanLine, Store, Truck, UserRound, type LucideIcon } from 'lucide-react';
+import { BadgeCheck, LayoutGrid, Package, Presentation, ReceiptText, ScanLine, Store, Truck, UserRound, type LucideIcon } from 'lucide-react';
 import type { Role } from '../../lib/api/types';
 
 export interface NavItem {
@@ -18,6 +18,7 @@ export const NAV: Record<Role, NavItem[]> = {
     { path: '/scan', label: 'Scan', icon: ScanLine, emphasis: true },
     { path: '/sales', label: 'Sales', icon: ReceiptText },
     { path: '/passport', label: 'Passport', icon: BadgeCheck },
+    { path: '/live', label: 'Live', icon: Presentation, desktopOnly: true },
   ],
   buyer: [
     { path: '/shop', label: 'Shop', icon: Store },

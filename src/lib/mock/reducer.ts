@@ -64,6 +64,7 @@ export function reduce(db: Db, action: Action): Db {
         title: `Added ${p.name}`,
         detail: `${batch.quantity} cartons · ${batch.batchNo}`,
         businessIds: [batch.sellerId],
+        batchId: batch.id,
       });
       return next;
     }
@@ -89,6 +90,7 @@ export function reduce(db: Db, action: Action): Db {
           title: `Listed ${p.name}`,
           detail: `${pct}% off · ${b.quantity} cartons`,
           businessIds: [b.sellerId],
+          batchId: b.id,
         }),
       };
     }
@@ -106,6 +108,7 @@ export function reduce(db: Db, action: Action): Db {
           kind: 'listed',
           title: `Unlisted ${p.name}`,
           businessIds: [b.sellerId],
+          batchId: b.id,
         }),
       };
     }
@@ -132,6 +135,7 @@ export function reduce(db: Db, action: Action): Db {
           title: `Offered ${p.name}`,
           detail: `${b.quantity} cartons · ${FOOD_BANK.name}`,
           businessIds: [b.sellerId, FOOD_BANK.id],
+          batchId: b.id,
         }),
       };
     }
@@ -155,6 +159,7 @@ export function reduce(db: Db, action: Action): Db {
           title: `${FOOD_BANK.name} collected`,
           detail: `${p.name} · ${b.donation.qty} cartons`,
           businessIds: [b.sellerId, FOOD_BANK.id],
+          batchId: b.id,
         }),
       };
     }
@@ -180,6 +185,8 @@ export function reduce(db: Db, action: Action): Db {
           detail: `${p.name} · ${o.qty} cartons`,
           amount: o.total,
           businessIds: [o.sellerId, o.buyerId],
+          batchId: o.batchId,
+          orderId: o.id,
         }),
       };
     }
@@ -202,6 +209,8 @@ export function reduce(db: Db, action: Action): Db {
           detail: `${p?.name ?? 'Order'} · ${o.qty} cartons`,
           amount: o.total,
           businessIds: [o.sellerId, o.buyerId],
+          batchId: o.batchId,
+          orderId: o.id,
         }),
       };
     }

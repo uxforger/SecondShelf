@@ -55,6 +55,13 @@ export function setSession(s: Session | null) {
   } catch {
     /* ignore */
   }
+  if (!s) {
+    try {
+      sessionStorage.removeItem('secondshelf_expiry_alerted');
+    } catch {
+      /* ignore */
+    }
+  }
   sessionStore.set(s);
 }
 
@@ -113,4 +120,49 @@ export function highlight(id: string) {
 
 export function useHighlight() {
   return useStore(highlightStore);
+}
+
+/* ---------------- Banners (live alerts from other devices) ---------------- */
+
+export interface Banner {
+  id: number;
+  title: string;
+  detail?: string;
+  icon: 'alert' | 'listed' | 'paid' | 'handed_over' | 'pickup';
+  /** Tapping the banner runs this. */
+  open?: () => void;
+}
+
+const bannerStore = createStore<Banner[]>([]);
+let bannerId = 0;
+
+export function banner(b: Omit<Banner, 'id'>) {
+  const item = { ...b, id: ++bannerId };
+  bannerStore.set([item, ...bannerStore.get()].slice(0, 2));
+  setTimeout(() => dismissBanner(item.id), 6000);
+}
+
+export function dismissBanner(id: number) {
+  bannerStore.set(bannerStore.get().filter((b) => b.id !== id));
+}
+
+export function useBanners() {
+  return useStore(bannerStore);
+}
+
+/* ---------------- Open a batch from anywhere (e.g. an alert) ---------------- */
+
+const openRequest = createStore<{ batchId: string; mode: 'detail' | 'list'; n: number } | null>(null);
+let openN = 0;
+
+export function requestOpenBatch(batchId: string, mode: 'detail' | 'list' = 'detail') {
+  openRequest.set({ batchId, mode, n: ++openN });
+}
+
+export function useOpenRequest() {
+  return useStore(openRequest);
+}
+
+export function clearOpenRequest() {
+  openRequest.set(null);
 }

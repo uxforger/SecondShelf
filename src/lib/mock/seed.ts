@@ -186,6 +186,7 @@ export function seed(now: Date = new Date()): Db {
   return {
     version: 1,
     seededOn: day,
+    startedAt: now.toISOString(),
     businesses,
     products: PRODUCTS,
     batches,

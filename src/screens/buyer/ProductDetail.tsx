@@ -5,7 +5,7 @@ import { contentWidth } from '../../components/layout/Page';
 import { Badge, ExpiryBadge } from '../../components/ui/Badge';
 import { BottomSheet } from '../../components/ui/BottomSheet';
 import { Button, IconButton } from '../../components/ui/Button';
-import { CountUp, EmptyState } from '../../components/ui/Feedback';
+import { Figure, EmptyState } from '../../components/ui/Feedback';
 import { Photo } from '../../components/ui/Photo';
 import { QuantityStepper } from '../../components/ui/QuantityStepper';
 import { SegmentedControl } from '../../components/ui/SegmentedControl';
@@ -95,7 +95,7 @@ export function ProductDetail({ id }: { id: string; session: Session }) {
 
           <div className="mt-5 hidden items-center justify-between lg:flex">
             <span className="t-label text-muted">Total</span>
-            <CountUp from="value" value={subtotal} format={naira} className="text-[1.5rem] font-semibold text-deep" />
+            <Figure value={subtotal} format={naira} className="text-[1.5rem] font-semibold text-deep" />
           </div>
           <Button size="lg" block className="mt-4 max-lg:hidden" disabled={soldOut} onClick={() => setCheckout(true)}>
             Buy
@@ -108,7 +108,7 @@ export function ProductDetail({ id }: { id: string; session: Session }) {
         <div className={`${contentWidth} flex h-20 items-center gap-4`}>
           <div className="min-w-0 flex-1">
             <p className="t-caption text-muted">Total</p>
-            <CountUp from="value" value={subtotal} format={naira} className="text-[1.375rem] font-semibold leading-7 text-deep" />
+            <Figure value={subtotal} format={naira} className="text-[1.375rem] font-semibold leading-7 text-deep" />
           </div>
           <Button size="lg" className="w-40" disabled={soldOut} onClick={() => setCheckout(true)}>
             Buy
@@ -161,7 +161,7 @@ export function ProductDetail({ id }: { id: string; session: Session }) {
           <div className="flex min-h-14 items-center justify-between py-2">
             <dt className="t-heading text-deep">Total</dt>
             <dd>
-              <CountUp from="value" value={total} format={naira} className="text-[1.5rem] font-semibold text-deep" />
+              <Figure value={total} format={naira} className="text-[1.5rem] font-semibold text-deep" />
             </dd>
           </div>
         </dl>

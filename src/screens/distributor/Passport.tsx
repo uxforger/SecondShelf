@@ -6,7 +6,7 @@ import { Badge } from '../../components/ui/Badge';
 import { BottomSheet } from '../../components/ui/BottomSheet';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { CountUp, ProgressSteps, SuccessMark } from '../../components/ui/Feedback';
+import { Figure, ProgressSteps, SuccessMark } from '../../components/ui/Feedback';
 import { api, ApiError, type Session } from '../../lib/api';
 import { naira, shortDate, weight } from '../../lib/format';
 import { spring } from '../../lib/motion';
@@ -42,10 +42,10 @@ export function Passport({ session }: { session: Session }) {
   };
 
   const rows: [string, React.ReactNode][] = [
-    ['Sell-through', <CountUp value={m.sellThroughPct} format={(n) => `${Math.round(n)}%`} />],
-    ['Orders fulfilled', <CountUp value={m.ordersFulfilled} format={(n) => `${Math.round(n)}`} />],
-    ['Repeat buyers', <CountUp value={m.repeatBuyers} format={(n) => `${Math.round(n)} of ${m.buyers}`} />],
-    ['Food rescued', <CountUp value={m.foodRescuedKg} format={weight} />],
+    ['Sell-through', <Figure value={m.sellThroughPct} format={(n) => `${Math.round(n)}%`} />],
+    ['Orders fulfilled', <Figure value={m.ordersFulfilled} format={(n) => `${Math.round(n)}`} />],
+    ['Repeat buyers', <Figure value={m.repeatBuyers} format={(n) => `${Math.round(n)} of ${m.buyers}`} />],
+    ['Food rescued', <Figure value={m.foodRescuedKg} format={weight} />],
   ];
 
   return (
@@ -65,7 +65,7 @@ export function Passport({ session }: { session: Session }) {
               {db.passportSharedAt && <Badge tone="deep" className="bg-white/12 ring-1 ring-white/20">Shared {shortDate(db.passportSharedAt)}</Badge>}
             </div>
             <p className="t-label mt-6 text-white/75">Verified sales · 90 days</p>
-            <CountUp value={m.verifiedSales90} format={naira} className="mt-1 block text-[2.25rem] font-semibold leading-[2.625rem] tracking-[-0.02em] lg:text-[2.75rem] lg:leading-[3rem]" />
+            <Figure value={m.verifiedSales90} format={naira} className="mt-1 block text-[2.25rem] font-semibold leading-[2.625rem] tracking-[-0.02em] lg:text-[2.75rem] lg:leading-[3rem]" />
             <Button variant="cta" className="mt-6" icon={<Landmark className="size-5" />} onClick={() => setConsent(true)}>
               {db.passportSharedAt ? 'Share again' : 'Share with bank'}
             </Button>

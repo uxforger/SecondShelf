@@ -97,11 +97,16 @@ export interface Activity {
   detail?: string;
   amount?: number;
   businessIds: string[];
+  /** What the event is about, for links and the live screen. */
+  batchId?: string;
+  orderId?: string;
 }
 
 export interface Db {
   version: number;
   seededOn: string;
+  /** When this demo run started (seed or reset). The live view counts from here. */
+  startedAt?: string;
   businesses: Business[];
   products: Product[];
   batches: Batch[];

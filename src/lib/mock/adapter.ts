@@ -20,6 +20,13 @@ import { seed } from './seed.ts';
 const STORAGE_KEY = 'secondshelf_demo_v1';
 const POLL_MS = 2000;
 
+/** "MP-1110": product initials + day and month, readable on a carton. */
+function defaultBatchNo(name: string): string {
+  const initials = name.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase() || 'B';
+  const d = new Date();
+  return `${initials}-${String(d.getDate()).padStart(2, '0')}${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const rand = () => Math.random().toString(36).slice(2, 8);
 
@@ -197,7 +204,7 @@ export function createMockApi(): SecondShelfApi {
         id: `b-${rand()}`,
         productId,
         sellerId: DISTRIBUTOR.id,
-        batchNo: input.batchNo.trim().toUpperCase() || `B-${rand().toUpperCase()}`,
+        batchNo: input.batchNo.trim().toUpperCase() || defaultBatchNo(product?.name ?? db.products.find((p) => p.id === productId)?.name ?? 'Batch'),
         expiry: input.expiry,
         quantity: input.quantity,
         addedAt: new Date().toISOString(),

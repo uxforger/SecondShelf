@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import type { ReactNode } from 'react';
 import { Badge, ExpiryBadge } from '../../components/ui/Badge';
 import { Card } from '../../components/ui/Card';
-import { CountUp } from '../../components/ui/Feedback';
+import { Figure } from '../../components/ui/Feedback';
 import { Photo } from '../../components/ui/Photo';
 import type { Activity, ImageKey } from '../../lib/api';
 import { ago, naira, nairaShort, tonnes, weight } from '../../lib/format';
@@ -88,14 +88,14 @@ export function MoneyCard({ m }: { m: Metrics }) {
             label="Recovered"
             note={m.moneyPending > 0 ? <span className="num">+{naira(m.moneyPending)} waiting</span> : undefined}
           >
-            <CountUp value={m.moneyRecovered} format={naira} />
+            <Figure value={m.moneyRecovered} format={naira} />
           </StatBlock>
         </div>
         <StatBlock label="Sold before expiry">
-          <CountUp value={m.soldBeforeExpiryPct} format={(n) => `${Math.round(n)}%`} />
+          <Figure value={m.soldBeforeExpiryPct} format={(n) => `${Math.round(n)}%`} />
         </StatBlock>
         <StatBlock label="Repeat buyers">
-          <CountUp value={m.repeatBuyers} format={(n) => `${Math.round(n)}`} />
+          <Figure value={m.repeatBuyers} format={(n) => `${Math.round(n)}`} />
         </StatBlock>
       </div>
     </Card>
@@ -112,10 +112,10 @@ export function CarbonCard({ m }: { m: Metrics }) {
       </div>
       <div className="mt-4 grid grid-cols-2 gap-4">
         <StatBlock label="CO₂e avoided" note={pending ? <span className="num">+{tonnes(m.co2ePending, 2)} pending</span> : 'VM0046 method'}>
-          <CountUp value={m.co2eVerified} format={(n) => tonnes(n, 2)} />
+          <Figure value={m.co2eVerified} format={(n) => tonnes(n, 2)} />
         </StatBlock>
         <StatBlock label="Food rescued">
-          <CountUp value={m.foodRescuedKg} format={weight} />
+          <Figure value={m.foodRescuedKg} format={weight} />
         </StatBlock>
       </div>
     </Card>

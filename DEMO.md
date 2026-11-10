@@ -10,7 +10,7 @@ Print these and stick them on real cartons. They use the `200` in-store prefix, 
 | Digestive biscuits | 24 × 200 g, ₦7,200 | `2006001000047` | [docs/barcodes/digestive-biscuits.svg](docs/barcodes/digestive-biscuits.svg) |
 | Fruit drink | 12 × 1 L, ₦8,400 | `2006001000054` | [docs/barcodes/fruit-drink.svg](docs/barcodes/fruit-drink.svg) |
 
-The first three are the stage set. **Milk powder (`2006001000030`) is the one to scan live**: the seed stock already has a Milk powder batch, so the new batch lands in "Expiring soon" next to it, which reads well on the projector.
+**Milk powder (`2006001000030`) is the one to scan on stage.** Give it an expiry about 4 weeks out: that puts it inside the six-week window, so the alert fires straight away and the whole story (scan → list → buy → handover) runs on that one carton. The other codes are spares.
 
 Printing tips:
 - Print at 100% scale, at least 4 cm wide. Matte paper scans better than glossy.

@@ -1,18 +1,18 @@
 import { QrCode, ReceiptText } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { Page } from '../../components/layout/Page';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Card, SectionHeader } from '../../components/ui/Card';
-import { CountUp, EmptyState } from '../../components/ui/Feedback';
+import { Figure, EmptyState } from '../../components/ui/Feedback';
 import type { Order, Session } from '../../lib/api';
 import { today } from '../../lib/dates';
 import { ago, naira } from '../../lib/format';
 import { spring } from '../../lib/motion';
 import { navigate } from '../../lib/router';
 import { business, metrics, offers, ordersFor, product } from '../../lib/selectors';
-import { toast, useDb } from '../../lib/store';
+import { useDb } from '../../lib/store';
 import { Thumb } from './parts';
 
 export function Sales({ session }: { session: Session }) {
@@ -23,23 +23,12 @@ export function Sales({ session }: { session: Session }) {
   const done = orders.filter((o) => o.status === 'handed_over').slice(0, 8);
   const listed = offers(db, today()).filter((v) => v.batch.sellerId === session.businessId);
 
-  // Announce new paid orders as they arrive from the buyer's phone.
-  const seen = useRef<Set<string> | null>(null);
-  const waitingKey = waiting.map((o) => o.id).join();
-  useEffect(() => {
-    const ids = new Set(waiting.map((o) => o.id));
-    if (seen.current) {
-      for (const o of waiting) if (!seen.current.has(o.id)) toast(`New order · ${naira(o.total)}`, 'success');
-    }
-    seen.current = ids;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [waitingKey]);
 
   return (
     <Page title="Sales">
       <Card dark className="overflow-hidden p-5 lg:p-6">
         <p className="t-label text-white/70">Recovered</p>
-        <CountUp value={m.moneyRecovered} format={naira} className="mt-1 block text-[2.125rem] font-semibold leading-10 tracking-[-0.02em] lg:text-[2.5rem] lg:leading-[2.75rem]" />
+        <Figure value={m.moneyRecovered} format={naira} className="mt-1 block text-[2.125rem] font-semibold leading-10 tracking-[-0.02em] lg:text-[2.5rem] lg:leading-[2.75rem]" />
         <motion.p
           initial={false}
           animate={{ opacity: m.moneyPending > 0 ? 1 : 0, y: m.moneyPending > 0 ? 0 : -4 }}

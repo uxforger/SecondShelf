@@ -1,10 +1,10 @@
-import { ArrowRight, Wifi, WifiOff } from 'lucide-react';
+import { ArrowRight, Presentation, Wifi, WifiOff } from 'lucide-react';
 import { useMemo } from 'react';
 import { Page } from '../../components/layout/Page';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { CountUp } from '../../components/ui/Feedback';
+import { Figure } from '../../components/ui/Feedback';
 import { api, type Session } from '../../lib/api';
 import { naira } from '../../lib/format';
 import { navigate } from '../../lib/router';
@@ -22,10 +22,15 @@ export function Overview({ session }: { session: Session }) {
     <Page
       title="Overview"
       actions={
+        <>
+        <Button size="sm" icon={<Presentation className="size-[18px]" />} onClick={() => navigate('/live', { tab: true })}>
+          Present live
+        </Button>
         <Badge tone={live ? 'success' : 'neutral'} dot={false} className="gap-1">
           {live ? <Wifi className="size-3.5" /> : <WifiOff className="size-3.5" />}
           {live ? 'Live' : 'This device'}
         </Badge>
+        </>
       }
     >
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:gap-6">
@@ -43,10 +48,10 @@ export function Overview({ session }: { session: Session }) {
           </div>
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
             <StatBlock label="Verified sales · 90 days">
-              <CountUp value={m.verifiedSales90} format={naira} />
+              <Figure value={m.verifiedSales90} format={naira} />
             </StatBlock>
             <StatBlock label="Orders fulfilled">
-              <CountUp value={m.ordersFulfilled} format={(n) => `${Math.round(n)}`} />
+              <Figure value={m.ordersFulfilled} format={(n) => `${Math.round(n)}`} />
             </StatBlock>
           </div>
           <Button variant="secondary" className="mt-5" icon={<ArrowRight className="size-5" />} onClick={() => navigate('/passport', { tab: true })}>

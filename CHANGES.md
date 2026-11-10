@@ -15,6 +15,8 @@
 - **Hash router** with shared-axis page transitions and a working back button (`src/lib/router.ts`).
 - **Screens** rebuilt for every flow (see the demo script below), plus food bank pickups.
 - **PWA:** manifest, app-shell service worker, icons rendered from the logo, resized WebP copies of every photo.
+- **Live view** (`/live`, "Present live" on Overview): projector screen for the demo.
+- **Live banners** (`src/lib/useLiveAlerts.ts`, `src/components/ui/Banners.tsx`) and an **At risk** card on Stock.
 - **Docs:** `AUDIT.md`, `DEMO.md` (printable barcodes), this file.
 
 **Words:** about 2,700 words of interface copy before, under 650 now (−76%). No paragraphs; the longest line is an empty-state hint.
@@ -24,6 +26,8 @@
 - **Calm and fast:** one primary action per screen, numbers before words, sheets for short tasks.
 - **Fluid:** every touchable thing responds on pointer-down and uses springs that start from the current value. The bottom sheet tracks the finger, rubber-bands past the top, projects the flick, and hands release velocity to the spring. The same sheet becomes a right-side panel on desktop.
 - **Visible process:** listing, payment, handover and bank sharing show their steps. Waits are 0.5–1.2 s per stage, never a silent spinner.
+- **Still numbers:** figures never count up or animate. They show the real value; when one changes live it switches instantly and shows a small chip ("+₦130k") for four seconds.
+- **Live, not static:** every device reacts to the others: banners for new listings, orders, pickups and handovers, an expiry alert on sign-in and after a scan, and a projector view that fills in Scan → Sell → Prove as it happens.
 - **Honest numbers:** money and carbon sit in separate cards. Carbon counts only batches with past destruction records, handed over or collected. It shows "Verified", or "Estimate" while a payment is waiting for handover.
 
 ## What is mocked
@@ -96,49 +100,49 @@ All three devices must use **the same URL** so they share one demo database. Che
 
 ## Demo script
 
-**Before going on stage**
-1. Start the server (above) and open the HTTPS link on all three devices.
-2. Phone 2 → Profile → **Reset** (resets all devices).
-3. **Laptop** (projector): sign in as **Distributor** → **Overview**. Check the badge top-right says **Live**.
-4. **Phone 1:** sign in as **Distributor** → **Stock**. Open **Scan** once and tap **Allow camera** so the prompt doesn't appear on stage. Close it.
-5. **Phone 2:** sign in as **Buyer** → **Shop**.
-6. Have the printed **Milk powder** barcode (`2006001000030`) on a carton.
+**The idea:** one carton, one continuous story, and every number on the projector moves because of something the judges just watched someone do. The laptop runs **Live** (projector view). Nothing on it is pre-recorded; it only shows what happened since the last reset.
 
-**1. Scan (Phone 1)**
-1. Tap **Scan** (centre tab). Point at the Milk powder carton. The brackets snap to the code, the phone ticks, the frame freezes.
-2. The sheet shows "Finding product…", then fills in. Pick an expiry about **4 weeks** out, type a batch number, hold **+** to show the stepper accelerating.
-3. *Optional:* pick yesterday's date to show "Expired items can't be added." Then fix it.
-4. Tap **Save**. The sheet drops away and the new batch slides into **Expiring soon**, flashing mint.
-   *Laptop:* "Added Milk powder" appears in Recent activity.
+| Device | Who | Signed in as | Screen |
+| --- | --- | --- | --- |
+| Laptop (projector) | Presenter | Distributor | **Live** |
+| Phone 1 | Ade, the distributor | Distributor | **Stock** |
+| Phone 2 | Mama Tolu, the buyer | Buyer | **Shop** |
 
-**2. List (Phone 1)**
-1. Tap **Cream crackers** (5 weeks left) → **List for sale**.
-2. Drag the slider to **25%**: "₦2,600 → ₦1,950", and the line underneath shows how much more than a fire sale.
-3. Tap **List now**: Saving → Notifying buyers nearby → Listed. The row moves into **Listed**.
-   *Phone 2:* Cream crackers appears in Shop within 2 seconds (or pull down to refresh).
-4. *Phone 1:* open the **Sales** tab and leave it there.
+**Before going on stage (2 minutes)**
+1. Start the server and open the same HTTPS link on all three devices (see "Running it").
+2. Any device → Profile → **Reset** (resets all three).
+3. Laptop: sign in as Distributor → Overview → **Present live**. All three stages read "Waiting…".
+4. Phone 2: sign in as Buyer → Shop.
+5. Phone 1: sign in as Distributor. Open **Scan** once and tap **Allow camera**, then close it. *(Optional beat: on sign-in it shows an alert, "Instant noodles · 12 days left · ₦418,800 at risk". You can open with that: "the app tells Ade what to sell today.")*
+6. Have the printed **Milk powder** barcode (`2006001000030`) stuck on a carton.
 
-**3. Buy and pay (Phone 2)**
-1. Tap **Cream crackers**. The photo grows into the header.
-2. Set **10** cartons; the total springs to ₦19,500. Tap **Buy** → **Pickup** → **Pay with Access Bank**.
-3. Connecting to Access Bank → Authorising payment → Confirmed. The check draws on, the phone ticks, and the QR shows with ref `SS-2xxxx`.
-   *Phone 1 (on Sales):* "New order · ₦19,500" and the order slides into **Waiting for handover**.
-   *Laptop:* Money shows "+₦19,500 waiting"; Carbon switches to **Estimate**; activity shows "Mama Tolu Canteen paid".
-4. Tap **Done** to show the order with its QR.
+**1. Scan (Phone 1), about 30 s**
+- Say: "Ade's warehouse in Mushin. A carton of milk powder comes in."
+- Tap **Scan** and point at the carton. Brackets lock on, the phone ticks, and the sheet fills in "Milk powder, 12 × 380 g".
+- Pick an expiry **4 weeks** out and tap **Save**.
+- Phone 1: a banner drops in, "**Milk powder · 4 weeks left · ₦444,000 at risk · tap to list**". This is the six-week alert.
+- Projector: **Scan** ticks and takes the amber "Now" highlight. **At risk** jumps with a "+₦444k" chip.
 
-**4. Handover (both phones)**
-1. *Phone 1:* **Sales** → **Confirm** → scan the QR on Phone 2. "Handed over" with the amount; Phone 1 ticks.
-2. *Phone 2:* the open order flips to **Handed over** by itself and ticks.
-3. *Laptop:* **Recovered** and **CO₂e avoided** count up; Carbon returns to **Verified**.
+**2. Sell (Phone 1 → Phone 2), about 60 s**
+- Phone 1: tap the banner. It opens straight into **List for sale** at the suggested 30%: ₦18,500 → **₦12,950**, "You recover ₦177,600 more than a fire sale". Tap **List now**: Saving → Notifying buyers nearby → Listed.
+- Projector: **Sell** lights up; **At risk** drops with a "−₦444k" chip.
+- Phone 2: a banner, "**New near you · Milk powder · ₦12,950 (was ₦18,500)**". Say: "Mama Tolu's canteen in Yaba, 6 km away, gets it right away."
+- Phone 2: tap the banner → **Buy** (10 cartons, ₦129,500) → **Pay with Access Bank**: Connecting → Authorising → Confirmed. Receipt with QR code; the phone ticks.
+- Phone 1: banner, "**Mama Tolu Canteen paid** · ₦129,500".
+- Projector: Sell now shows the payment; Carbon reads **Estimate until handover**.
 
-**5. Proof (Laptop)**
-1. **Passport**: verified sales (90 days), sell-through, orders, repeat buyers, food rescued, and the full record.
-2. **Share with bank** → "Share with Access Bank?" → **Share** → Shared.
+**3. Prove (both phones), about 30 s**
+- Phone 1: tap the banner (or **Sales**) → **Confirm** → scan the QR code on Phone 2. "Handed over"; the phone ticks.
+- Phone 2: the open order flips to **Handed over** by itself and ticks.
+- Projector: **Prove** ticks. **Recovered** and **Passport · 90 days** show "+₦130k", **CO₂e avoided** shows "+0.09 t" and returns to **Verified**. The record lists all four steps.
+- Close: "Every sale before expiry becomes verified trading history, a Business Passport Ade can take to Access Bank." Optional: Laptop → exit Live → **Passport** → **Share with bank** → Share.
 
 **If something goes wrong**
-- Camera won't focus: tap **Enter code** and type `2006001000030` (or the order code `SS-…` for the handover).
-- A phone isn't updating: check Profile → Sync. Reload the page; the session stays signed in.
-- Start over: Profile → **Reset**, on any device.
+- A banner was missed: banners stay 6 s and can be flicked up. Everything is also on **Stock** (the amber "At risk" card → **List**), **Shop**, and **Sales**.
+- Camera won't focus: tap **Enter code** and type `2006001000030` (or the `SS-…` order code for the handover).
+- Listed the wrong thing: tap **Undo** on the "Listed" toast.
+- A device isn't updating: check Profile → Sync says "Live across devices". Reload; the session stays signed in.
+- Start over: Profile → **Reset** on any device. The projector goes back to "Waiting…".
 
 ## Checks run
 

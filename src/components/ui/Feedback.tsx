@@ -1,6 +1,6 @@
 import { AlertCircle, Check } from 'lucide-react';
-import { AnimatePresence, motion, useInView, useReducedMotion, useSpring, useTransform } from 'motion/react';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { spring } from '../../lib/motion';
 import { dismissToast, useToasts } from '../../lib/store';
 import { Spinner } from './Button';
@@ -174,41 +174,58 @@ export function EmptyState({ icon, title, line, action }: { icon: ReactNode; tit
   );
 }
 
-/* ---------------- CountUp ---------------- */
+/* ---------------- Figure ---------------- */
 
 /**
- * Springs a number to its value on first view and on every change after.
- * Under reduced motion it just shows the value.
+ * A number shown exactly as it is. No counting. When it changes live,
+ * it swaps instantly and (optionally) shows a small "+₦19,500" chip for a
+ * few seconds so people looking at the screen notice what moved.
  */
-export function CountUp({
+export function Figure({
   value,
   format,
   className = '',
-  from = 'zero',
+  delta,
 }: {
   value: number;
   format: (n: number) => string;
   className?: string;
-  /** "value": start at the current value and only animate changes (prices, totals). */
-  from?: 'zero' | 'value';
+  /** Show the change as a chip, formatted with this (e.g. naira). */
+  delta?: (n: number) => string;
 }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: '0px 0px -10% 0px' });
-  const reduced = useReducedMotion();
-  const mv = useSpring(from === 'value' ? value : 0, { visualDuration: from === 'value' ? 0.45 : 0.9, bounce: 0 });
-  const text = useTransform(mv, (v) => format(v));
+  const prev = useRef(value);
+  const [change, setChange] = useState<{ id: number; by: number } | null>(null);
 
   useEffect(() => {
-    if (reduced) mv.jump(value);
-    else if (inView) mv.set(value);
-  }, [value, inView, reduced, mv]);
+    const by = value - prev.current;
+    prev.current = value;
+    if (!delta || Math.abs(by) < 1e-6) return;
+    const id = Date.now();
+    setChange({ id, by });
+    const t = window.setTimeout(() => setChange((c) => (c?.id === id ? null : c)), 4000);
+    return () => window.clearTimeout(t);
+  }, [value, delta]);
 
   return (
-    <span className={`num ${className}`}>
-      <span className="sr-only">{format(value)}</span>
-      <motion.span ref={ref} aria-hidden="true">
-        {text}
-      </motion.span>
+    <span className="relative inline-flex max-w-full flex-wrap items-baseline gap-x-2 gap-y-1">
+      <span className={`num ${className}`}>{format(value)}</span>
+      <AnimatePresence>
+        {change && delta && (
+          <motion.span
+            key={change.id}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={spring}
+            className={`num self-center whitespace-nowrap rounded-full px-2 py-0.5 text-[0.8125rem] font-semibold leading-5 ${
+              change.by > 0 ? 'bg-amber text-deep' : 'bg-mint text-deep'
+            }`}
+          >
+            {change.by > 0 ? '+' : '−'}
+            {delta(Math.abs(change.by))}
+          </motion.span>
+        )}
+      </AnimatePresence>
     </span>
   );
 }

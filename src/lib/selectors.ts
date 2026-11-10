@@ -173,3 +173,21 @@ export function metrics(db: Db, sellerId: string, now = Date.now()): Metrics {
     foodRescuedKg,
   };
 }
+
+export interface AtRisk {
+  /** Naira of unlisted stock inside the six-week window. */
+  value: number;
+  count: number;
+  /** Highest value first. */
+  items: BatchView[];
+}
+
+/** Stock that will be lost if nothing happens: unlisted, not donated, inside six weeks. */
+export function atRisk(db: Db, sellerId: string, ref: string): AtRisk {
+  const items = db.batches
+    .filter((b) => b.sellerId === sellerId && b.quantity > 0 && !b.listing && !b.donation)
+    .map((b) => viewOf(db, b, ref))
+    .filter((v): v is BatchView => !!v && v.days > 0 && v.days <= 42)
+    .sort((a, b) => b.batch.quantity * b.product.price - a.batch.quantity * a.product.price);
+  return { value: items.reduce((n, v) => n + v.batch.quantity * v.product.price, 0), count: items.length, items };
+}
