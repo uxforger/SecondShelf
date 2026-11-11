@@ -1,0 +1,75 @@
+# The real app. Deploy with a git SHA tag, never "latest":
+#   sed "s/IMAGE_TAG/<sha>/" k8s/app.yaml | kubectl apply -f -
+# See DEPLOY.md.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app-data
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi # quota allows one volume up to 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+spec:
+  replicas: 1
+  # One pod at a time: the SQLite volume is ReadWriteOnce.
+  strategy: { type: Recreate }
+  selector:
+    matchLabels: { app: app }
+  template:
+    metadata:
+      labels: { app: app }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: app
+          image: ghcr.io/uxforger/secondshelf:IMAGE_TAG
+          ports:
+            - containerPort: 8080
+          env:
+            - { name: DEMO_MODE, value: "false" }
+            - { name: PUBLIC_URL, value: "https://team19.xtradot.co" }
+            - { name: WEBHOOK_URL, value: "http://app.team19.svc.cluster.local/api/hooks/forge" }
+            - { name: DATA_DIR, value: "/data" }
+            # Collections merchant. /merchants/onboard is not in the sandbox build yet, so this
+            # is the sandbox's pre-provisioned merchant; see CHANGES.md.
+            - { name: BANK_MERCHANT_ID, value: "mer_204" }
+            # The one carbon pool project (solar_replacing_diesel, as instructed by the organisers).
+            - { name: CARBON_PROJECT_ID, value: "prj_118" }
+          # Team key (GATEWAY_KEY) comes from the pre-provisioned secret.
+          envFrom:
+            - secretRef: { name: huawei-gateway, optional: true }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          volumeMounts:
+            - { name: data, mountPath: /data }
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: app-data }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+spec:
+  selector: { app: app }
+  ports:
+    - port: 80
+      targetPort: 8080

@@ -1,22 +1,33 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
-import {defineConfig} from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 
-export default defineConfig(() => {
+/** The real server (/api, /healthz) runs inside the Vite dev and preview servers. */
+function apiServer(): Plugin {
+  // Loaded on first request only, so `vite build` never opens the database.
+  let app: ((req: any, res: any, next: () => void) => void) | null = null;
+  const handler = async (req: any, res: any, next: () => void) => {
+    if (!app) app = (await import('./src/server/app.ts')).createApp();
+    app(req, res, next);
+  };
   return {
-    plugins: [react(), tailwindcss()],
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, '.'),
-      },
+    name: 'secondshelf-api',
+    configureServer(server) {
+      server.middlewares.use(handler);
     },
-    server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify—file watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+    configurePreviewServer(server) {
+      server.middlewares.use(handler);
     },
   };
+}
+
+export default defineConfig({
+  plugins: [react(), tailwindcss(), apiServer()],
+  server: {
+    hmr: process.env.DISABLE_HMR !== 'true',
+  },
+  build: {
+    target: 'es2022',
+    chunkSizeWarningLimit: 700,
+  },
 });

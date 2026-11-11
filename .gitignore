@@ -6,3 +6,29 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Local UI captures (regenerate with Playwright)
+screenshots/
+
+# Secrets: never commit
+team19.yml
+team19.yaml
+*.kubeconfig
+kubeconfig*
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+docs/forge-sandbox-guide.pdf
+
+# Local SQLite data
+.data/
+dist-server/
+
+# Hosting-tool workspace
+.aistudio/
+metadata.json
+docs/Forge-*.pdf
+docs/forge-sandbox-api-spec-v2.pdf

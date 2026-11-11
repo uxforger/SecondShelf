@@ -1,0 +1,232 @@
+/**
+ * What the app needs from a bank. Two implementations share this contract:
+ * http.ts (Xtradot sandbox, inside the cluster) and mock.ts (DEMO_MODE).
+ */
+
+export interface CheckoutInput {
+  merchantId: string;
+  reference: string;
+  amount: number;
+  callbackUrl: string;
+  customerName: string;
+  customerEmail: string;
+  description: string;
+  idempotencyKey: string;
+}
+
+export interface CheckoutResult {
+  reference: string;
+  paymentUrl: string;
+}
+
+export type PaymentStatus = 'successful' | 'pending' | 'failed';
+
+export interface VerifyResult {
+  reference: string;
+  status: PaymentStatus;
+  amount?: number;
+  fee?: number;
+  raw: unknown;
+}
+
+export interface NameEnquiry {
+  accountNumber: string;
+  accountName: string;
+  nameEnquiryRef: string;
+  bankName: string;
+}
+
+export interface TransferInput {
+  reference: string;
+  sourceAccount: string;
+  destinationAccount: string;
+  nameEnquiryRef: string;
+  amount: number;
+  narration: string;
+  idempotencyKey: string;
+}
+
+export type TransferStatus = 'successful' | 'pending' | 'failed' | 'reversed';
+
+export interface TransferResult {
+  reference: string;
+  status: TransferStatus;
+  fee?: number;
+  vat?: number;
+  stampDuty?: number;
+  totalDebit?: number;
+  sessionId?: string;
+  raw: unknown;
+}
+
+export interface StatementSummary {
+  accountNumber: string;
+  accountName?: string;
+  transactions: number;
+  credits: number;
+  debits: number;
+  from?: string;
+  to?: string;
+}
+
+export interface CarbonProjectInput {
+  name: string;
+  type: string;
+  methodology: string;
+  location: { state: string; lga: string; lat: number; lng: number };
+  owner: { name: string; contactName: string; phone: string; payoutAccount: string; bankCode: string };
+  idempotencyKey: string;
+}
+
+export interface CarbonProjectResult {
+  id: string;
+  status: string;
+  payoutAccountName?: string;
+  raw: unknown;
+}
+
+export interface MrvInput {
+  projectId: string;
+  periodFrom: string;
+  periodTo: string;
+  metric: string;
+  value: number;
+  evidenceUrl: string;
+  idempotencyKey: string;
+}
+
+export interface MrvResult {
+  id: string;
+  status: string;
+  estimatedTco2e?: number;
+  verifiedTco2e?: number;
+  /** Whole credits (1 credit = 1 tCO2e, rounded down). */
+  creditsIssued?: number;
+  creditBatchId?: string;
+  serialRange?: string;
+  autoVerifyAt?: string;
+  note?: string;
+  raw: unknown;
+}
+
+export interface RetireInput {
+  creditBatchId: string;
+  quantity: number;
+  buyer: { name: string; email: string };
+  pricePerCredit: number;
+  paymentReference: string;
+  reason: string;
+  idempotencyKey: string;
+}
+
+export interface RetireResult {
+  retirementId: string;
+  quantity: number;
+  totalAmount?: number;
+  registryFee?: number;
+  status?: string;
+  payout?: { reference: string; amount: number; accountName?: string; status: string };
+  certificateUrl?: string;
+  raw: unknown;
+}
+
+export interface CertificateResult {
+  id: string;
+  projectId?: string;
+  projectName?: string;
+  quantity: number;
+  serialRange?: string;
+  buyer?: string;
+  reason?: string;
+  retiredAt?: string;
+  pdfUrl?: string;
+  raw: unknown;
+}
+
+export interface LoanInput {
+  accountNumber: string;
+  bvn?: string;
+  rcNumber?: string;
+  consentId?: string;
+  amount: number;
+  tenorDays: number;
+  purpose: string;
+  idempotencyKey: string;
+}
+
+export interface LoanResult {
+  id: string;
+  status: string;
+  principal?: number;
+  interestRate?: number;
+  tenorDays?: number;
+  fee?: number;
+  netDisbursement?: number;
+  repaymentTotal?: number;
+  dueDate?: string;
+  creditScore?: number;
+  decision?: string;
+  requestedAmount?: number;
+  schedule?: { instalment: number; dueDate: string; amount: number }[];
+  reason?: string;
+  raw: unknown;
+}
+
+export interface MerchantInput {
+  businessName: string;
+  rcNumber: string;
+  businessType: string;
+  tin: string;
+  category: string;
+  address: { line1: string; city: string; state: string };
+  directors: { name: string; bvn: string }[];
+  settlementAccount: string;
+  contactEmail: string;
+}
+
+export interface BankClient {
+  readonly mode: 'sandbox' | 'mock';
+  checkout(input: CheckoutInput): Promise<CheckoutResult>;
+  verifyPayment(reference: string): Promise<VerifyResult>;
+  nameEnquiry(accountNumber: string): Promise<NameEnquiry>;
+  transfer(input: TransferInput): Promise<TransferResult>;
+  getTransfer(reference: string): Promise<TransferResult>;
+  createConsent(accountNumber: string, idempotencyKey: string): Promise<{ id: string; status: string }>;
+  authoriseConsent(id: string, otp: string): Promise<{ id: string; status: string }>;
+  revokeConsent(id: string): Promise<void>;
+  statement(accountNumber: string, consentId: string): Promise<StatementSummary>;
+  registerWebhook(url: string, idempotencyKey: string): Promise<{ id: string; secret: string }>;
+  onboardMerchant(input: MerchantInput, idempotencyKey: string): Promise<{ merchantId: string; status: string; liveAfter?: string }>;
+  listWebhooks(): Promise<{ id: string; url: string }[]>;
+  deleteWebhook(id: string): Promise<void>;
+
+  createCarbonProject(input: CarbonProjectInput): Promise<CarbonProjectResult>;
+  submitMrv(input: MrvInput): Promise<MrvResult>;
+  getMrv(id: string): Promise<MrvResult>;
+  /** Sandbox: we play the independent verifier. */
+  reviewMrv(id: string, approve: boolean, idempotencyKey: string): Promise<MrvResult>;
+  retireCredits(input: RetireInput): Promise<RetireResult>;
+  getCertificate(id: string): Promise<CertificateResult>;
+
+  applyLoan(input: LoanInput): Promise<LoanResult>;
+  getLoan(id: string): Promise<LoanResult>;
+  acceptLoan(id: string, idempotencyKey: string): Promise<LoanResult>;
+  disburseLoan(id: string, idempotencyKey: string): Promise<LoanResult>;
+}
+
+export class BankError extends Error {
+  constructor(
+    public httpStatus: number,
+    public code: string,
+    message: string,
+    public requestId?: string,
+    public field?: string,
+  ) {
+    super(message);
+    this.name = 'BankError';
+  }
+  /** Outcome unknown: never resend, requery instead. */
+  get isTimeout() {
+    return this.httpStatus === 504 || this.code === 'TIMEOUT';
+  }
+}
