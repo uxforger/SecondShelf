@@ -383,9 +383,13 @@ function LoanSheet({ open, onClose, verifiedSales }: { open: boolean; onClose: (
               <Box label="Fee" value={loan.fee !== undefined ? naira(loan.fee) : '—'} />
               {/* Only when it differs from the offer, so the amount isn't shown twice. */}
               {loan.netDisbursement !== undefined && loan.netDisbursement !== loan.principal && <Box label="You receive" value={naira(loan.netDisbursement)} money />}
-              <Box label="Total to repay" value={loan.repaymentTotal !== undefined ? naira(loan.repaymentTotal) : '—'} />
+              <Box
+                label={loan.schedule?.length === 1 ? `Repay by ${shortDate(loan.schedule[0].dueDate)}` : 'Total to repay'}
+                value={loan.repaymentTotal !== undefined ? naira(loan.repaymentTotal) : '—'}
+              />
             </dl>
-            {loan.schedule && loan.schedule.length > 0 && (
+            {/* One instalment is just the total above, so only show a real schedule. */}
+            {loan.schedule && loan.schedule.length > 1 && (
               <div className="mt-5">
                 <p className="t-14 font-medium text-ink">Schedule</p>
                 <ul className="mt-2 divide-y divide-hairline rounded-[14px] bg-white ring-1 ring-hairline">
