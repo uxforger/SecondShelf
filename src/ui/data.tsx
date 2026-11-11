@@ -174,9 +174,10 @@ export function journeyOf(db: Db, info: BatchInfo): JourneyStep[] {
       label: 'Paid out',
       state: stateOf(5),
       time: when(latest?.payout?.status === 'successful' ? latest.payout.at : undefined),
-      value: latest?.payout?.status === 'successful' ? naira(latest.payout.amount) : undefined,
+      // Same money as "Paid": show the amount only if it differs, so no figure repeats.
+      value: latest?.payout?.status === 'successful' && latest.payout.amount !== latest.total ? naira(latest.payout.amount) : undefined,
       money: true,
-      detail: latest?.payout ? <span className="mono">{latest.payout.reference}</span> : 'To your bank account',
+      detail: latest?.payout ? <span className="mono">{latest.payout.reference} · to your account</span> : 'To your bank account',
     },
     {
       key: 'carbon',
@@ -260,6 +261,8 @@ export interface LedgerEvent {
   title: string;
   reference?: string;
   amount?: number;
+  /** "Paid out" once the money reached the distributor. */
+  note?: string;
   /** Where tapping goes. */
   to: string;
 }
@@ -269,8 +272,9 @@ export function ledger(db: Db): LedgerEvent[] {
   for (const o of db.orders) {
     if (o.sellerId !== SELLER) continue;
     const b = business(db, o.buyerId)?.name ?? 'Buyer';
-    ev.push({ id: `pay-${o.id}`, at: o.paidAt, kind: 'in', title: `${b} paid`, reference: o.ref, amount: o.total, to: `/batch/${o.batchId}` });
-    if (o.payout?.status === 'successful') ev.push({ id: `po-${o.id}`, at: o.payout.at, kind: 'out', title: 'Paid out to you', reference: o.payout.reference, amount: o.payout.amount, to: `/batch/${o.batchId}` });
+    // One row per sale, so its amount shows once: paid in, then paid out to you.
+    const out = o.payout?.status === 'successful';
+    ev.push({ id: `sale-${o.id}`, at: out ? o.payout!.at : o.paidAt, kind: 'in', title: `${b} paid`, reference: out ? `${o.ref} → ${o.payout!.reference}` : o.ref, amount: o.total, note: out ? 'Paid out' : 'Received', to: `/batch/${o.batchId}` });
   }
   const l = db.loan;
   if (l?.disbursedAt) ev.push({ id: `loan-${l.id}`, at: l.disbursedAt, kind: 'loan', title: 'Stock loan received', reference: l.id, amount: l.netDisbursement ?? l.principal, to: '/passport' });

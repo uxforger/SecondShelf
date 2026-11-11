@@ -207,6 +207,16 @@
   }
 }
 
+/* Scanner frame breathing while it waits. */
+.breathe {
+  animation: breathe 2.4s ease-in-out infinite;
+}
+@keyframes breathe {
+  50% {
+    transform: scale(1.03);
+  }
+}
+
 /* Scanner sweep line. */
 .sweep {
   animation: sweep 2.2s ease-in-out infinite alternate;
@@ -283,6 +293,7 @@
     scroll-behavior: auto;
   }
   .skeleton,
+  .breathe,
   .sweep,
   .spinner {
     animation-duration: 0s;

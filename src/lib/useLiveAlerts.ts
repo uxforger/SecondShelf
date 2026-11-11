@@ -75,7 +75,7 @@ export function clearExpiryAlertFlag() {
 }
 
 function openForListing(batchId: string) {
-  navigate('/stock', { tab: true });
+  navigate(`/batch/${batchId}`);
   requestOpenBatch(batchId, 'list');
 }
 
