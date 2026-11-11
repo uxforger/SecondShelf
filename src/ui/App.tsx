@@ -14,6 +14,14 @@ import { BatchJourney } from './screens/distributor/Batch';
 import { Home } from './screens/distributor/Home';
 import { Scan } from './screens/distributor/Scan';
 import { Stock } from './screens/distributor/Stock';
+import { Handover } from './screens/distributor/Handover';
+import { Sales } from './screens/distributor/Sales';
+import { BuyerHome } from './screens/buyer/BuyerHome';
+import { OrderDetail, Orders } from './screens/buyer/Orders';
+import { Paid } from './screens/buyer/Paid';
+import { Product } from './screens/buyer/Product';
+import { Shop } from './screens/buyer/Shop';
+import { Pickups } from './screens/foodbank/Pickups';
 import { AppShell, HOME } from './shell';
 
 interface Resolved {
@@ -35,10 +43,30 @@ function resolve(path: string, session: Session): Resolved | null {
         return { key: clean, el: <Stock session={session} /> };
       case '/scan':
         return { key: clean, el: <Scan />, bare: true };
+      case '/sales':
+        return { key: clean, el: <Sales session={session} /> };
+      case '/handover':
+        return { key: clean, el: <Handover />, bare: true };
     }
     const batch = match('/batch/:id', clean);
     if (batch) return { key: clean, el: <BatchJourney id={batch.id} session={session} /> };
+    const ho = match('/handover/:ref', clean);
+    if (ho) return { key: '/handover', el: <Handover expected={ho.ref} />, bare: true };
   }
+
+  if (session.role === 'buyer') {
+    if (clean === '/buy') return { key: clean, el: <BuyerHome session={session} /> };
+    if (clean === '/shop') return { key: clean, el: <Shop session={session} /> };
+    if (clean === '/orders') return { key: clean, el: <Orders session={session} /> };
+    const prod = match('/shop/:id', clean);
+    if (prod) return { key: clean, el: <Product id={prod.id} session={session} /> };
+    const order = match('/orders/:id', clean);
+    if (order) return { key: clean, el: <OrderDetail id={order.id} session={session} /> };
+    const pay = match('/pay/:ref', clean);
+    if (pay) return { key: clean, el: <Paid reference={pay.ref} />, bare: true };
+  }
+
+  if (session.role === 'foodbank' && clean === '/pickups') return { key: clean, el: <Pickups session={session} /> };
   return null;
 }
 

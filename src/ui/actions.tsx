@@ -131,6 +131,7 @@ export function TransferSheet({
 function TransferBody({ enquire, send, existing, onClose, onDone }: { enquire: () => Promise<PayoutPreview>; send: () => Promise<Payout>; existing?: Payout; onClose: () => void; onDone?: (p: Payout) => void }) {
   const [st, setSt] = useState<PayState>(existing?.status === 'successful' ? { s: 'sent', payout: existing } : { s: 'resolving' });
   const alive = useRef(true);
+  const started = useRef(false);
 
   const resolve = async () => {
     setSt({ s: 'resolving' });
@@ -144,7 +145,11 @@ function TransferBody({ enquire, send, existing, onClose, onDone }: { enquire: (
 
   useEffect(() => {
     alive.current = true;
-    if (st.s === 'resolving') void resolve();
+    // One enquiry per sheet, even when React mounts the effect twice.
+    if (st.s === 'resolving' && !started.current) {
+      started.current = true;
+      void resolve();
+    }
     return () => {
       alive.current = false;
     };

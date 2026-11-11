@@ -1,7 +1,7 @@
 import { Award, Clock, HandHeart, Leaf, PackageCheck, Tag, Undo2, Wallet } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { api, ApiError, type Session } from '../../../lib/api';
+import { api, ApiError, type Order, type Session } from '../../../lib/api';
 import { naira, shortDate } from '../../../lib/format';
 import { spring } from '../../../lib/motion';
 import { navigate } from '../../../lib/router';
@@ -30,16 +30,22 @@ export function BatchJourney({ id, session }: { id: string; session: Session }) 
   }, [db, id]);
   const steps = useMemo(() => (info ? journeyOf(db, info) : []), [db, info]);
   const [sheet, setSheet] = useState<'list' | 'payout' | null>(null);
+  // Held while the sheet is open: once paid, the next step moves on to carbon.
+  const [payOrder, setPayOrder] = useState<Order | null>(null);
   const [busy, setBusy] = useState<'donate' | 'unlist' | null>(null);
   const request = useOpenRequest();
 
   // "Tap to list" from an alert lands here with the List sheet open.
   useEffect(() => {
-    if (request?.batchId === id && request.mode === 'list') {
-      clearOpenRequest();
-      setSheet('list');
+    if (request?.batchId !== id || !info) return;
+    clearOpenRequest();
+    // From an alert: list it. Straight after a handover: the payout is next.
+    if (request.mode === 'list' && (info.next.kind === 'list' || info.next.kind === 'reprice')) setSheet('list');
+    if (request.mode === 'detail' && info.next.kind === 'payout') {
+      setPayOrder(info.next.order);
+      setSheet('payout');
     }
-  }, [request, id]);
+  }, [request, id, info]);
 
   if (!info) {
     return (
@@ -61,6 +67,7 @@ export function BatchJourney({ id, session }: { id: string; session: Session }) 
       case 'reprice':
         return setSheet('list');
       case 'payout':
+        setPayOrder(next.order);
         return setSheet('payout');
       case 'handover':
         return navigate(`/handover/${encodeURIComponent(next.order.ref)}`);
@@ -161,7 +168,7 @@ export function BatchJourney({ id, session }: { id: string; session: Session }) 
       </div>
 
       <ListSheet info={info} open={sheet === 'list'} onClose={() => setSheet(null)} />
-      <PayoutSheet order={next.kind === 'payout' ? next.order : null} open={sheet === 'payout'} onClose={() => setSheet(null)} />
+      <PayoutSheet order={payOrder} open={sheet === 'payout'} onClose={() => setSheet(null)} />
     </Page>
   );
 }
