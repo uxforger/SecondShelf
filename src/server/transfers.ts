@@ -51,14 +51,18 @@ export async function enquire(t: TransferTarget): Promise<PayoutPreview & { stat
   if (r && (r.status !== 'enquired' || fresh(r))) return preview(r);
   const ne = await bank.nameEnquiry(t.account);
   const at = now();
-  if (r) {
-    sql.prepare('UPDATE payouts SET account_name = ?, name_enquiry_ref = ?, enquired_at = ?, updated_at = ? WHERE order_id = ?').run(ne.accountName, ne.nameEnquiryRef, at, at, t.key);
-  } else {
+  // Two enquiries can run at once (two devices, a double tap). The first insert
+  // wins and keeps its reference and idempotency key; the other just refreshes
+  // the name, and only while the payout hasn't started sending.
+  const inserted = sql
+    .prepare(
+      'INSERT OR IGNORE INTO payouts (order_id, reference, idem_key, status, account_number, account_name, name_enquiry_ref, enquired_at, amount, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    )
+    .run(t.key, `PO-${t.refBase}-${Date.now().toString(36).slice(-4)}`, randomUUID(), 'enquired', t.account, ne.accountName, ne.nameEnquiryRef, at, t.amount, at);
+  if (Number(inserted.changes) === 0) {
     sql
-      .prepare(
-        'INSERT INTO payouts (order_id, reference, idem_key, status, account_number, account_name, name_enquiry_ref, enquired_at, amount, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      )
-      .run(t.key, `PO-${t.refBase}-${Date.now().toString(36).slice(-4)}`, randomUUID(), 'enquired', t.account, ne.accountName, ne.nameEnquiryRef, at, t.amount, at);
+      .prepare("UPDATE payouts SET account_name = ?, name_enquiry_ref = ?, enquired_at = ?, updated_at = ? WHERE order_id = ? AND status = 'enquired'")
+      .run(ne.accountName, ne.nameEnquiryRef, at, at, t.key);
   }
   return preview(row(t.key)!);
 }
