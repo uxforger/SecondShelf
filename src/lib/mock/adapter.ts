@@ -104,7 +104,11 @@ export function createMockApi(): SecondShelfApi {
   async function pull(force = false) {
     if (mode !== 'live' || (pending > 0 && !force)) return;
     const fresh = await fetchState();
-    if (fresh && (force || pending === 0) && fresh.version !== db.version) set(fresh);
+    // Pulls overlap (poll, push, after an action). Only move forward, so a slow
+    // older reply can't roll the screen back. A new run (reset, or a server
+    // restart that starts the count again) is always taken.
+    const newer = !!fresh && (fresh.version > db.version || fresh.startedAt !== db.startedAt);
+    if (fresh && (force || pending === 0) && newer) set(fresh);
   }
 
   async function get<T>(url: string): Promise<T> {
