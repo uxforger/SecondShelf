@@ -12,6 +12,7 @@ import { expiryWords } from './data';
 import { BankCard, BankProcess } from './kit/bank';
 import { Button, Pill, SuccessCheck } from './kit/core';
 import { Slider } from './kit/fields';
+import { useSimulatedBank } from './mode';
 import { ProductPhoto } from './kit/media';
 import { Sheet } from './kit/sheet';
 
@@ -129,6 +130,7 @@ export function TransferSheet({
 }
 
 function TransferBody({ enquire, send, existing, onClose, onDone }: { enquire: () => Promise<PayoutPreview>; send: () => Promise<Payout>; existing?: Payout; onClose: () => void; onDone?: (p: Payout) => void }) {
+  const simulated = useSimulatedBank();
   const [st, setSt] = useState<PayState>(existing?.status === 'successful' ? { s: 'sent', payout: existing } : { s: 'resolving' });
   const alive = useRef(true);
   const started = useRef(false);
@@ -186,7 +188,11 @@ function TransferBody({ enquire, send, existing, onClose, onDone }: { enquire: (
             const preview = st.s === 'error' ? st.preview! : st.preview;
             return (
               <>
-                <p className="t-12 font-semibold tracking-[0.06em] text-slate uppercase">Pay to · bank-resolved name</p>
+                {simulated ? (
+                  <p className="t-12 font-semibold tracking-[0.06em] text-amber-ink uppercase">Pay to · simulated name check (demo mode)</p>
+                ) : (
+                  <p className="t-12 font-semibold tracking-[0.06em] text-slate uppercase">Pay to · bank-resolved name</p>
+                )}
                 <p className="t-24 mt-1 break-words text-ink">{preview.accountName}</p>
                 <p className="mono mt-1 text-slate">
                   {preview.bankName} · {preview.accountNumber}

@@ -9,6 +9,7 @@ import { useDb } from '../../../lib/store';
 import { batchInfo, expiryWords, journeyOf, kpis, nextAction, SELLER } from '../../data';
 import { CountUp, IconButton, LogoMark, Pill } from '../../kit/core';
 import { Journey } from '../../kit/journey';
+import { useSimulatedBank } from '../../mode';
 import { ProductPhoto } from '../../kit/media';
 
 const ICON: Record<ActivityKind, ReactNode> = {
@@ -43,6 +44,7 @@ function totals(db: Db) {
 export function Live() {
   const db = useDb();
   const reduced = useReducedMotion();
+  const simulated = useSimulatedBank();
   const info = useMemo(() => currentBatch(db), [db]);
   const steps = useMemo(() => (info ? journeyOf(db, info) : []), [db, info]);
   const t = useMemo(() => totals(db), [db]);
@@ -63,7 +65,7 @@ export function Live() {
           <h1 className="font-display text-[1.5rem] font-semibold tracking-[-0.01em]">SecondShelf · Live</h1>
           <span className="flex items-center gap-2 rounded-full bg-white/8 px-3 py-1.5 text-[0.9375rem] font-medium text-white/80">
             <motion.span aria-hidden="true" className="size-2 rounded-full bg-lime" animate={reduced ? undefined : { opacity: [1, 0.35, 1] }} transition={{ duration: 2.4, repeat: Infinity }} />
-            Bank sandbox
+            {simulated ? 'Simulated bank · demo mode' : 'Bank sandbox'}
           </span>
           <span className="num ml-auto text-[1.25rem] text-white/60">{clock(now.toISOString())}</span>
           <IconButton label="Close live board" tone="dark" onClick={() => goBack('/home')}>

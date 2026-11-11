@@ -9,6 +9,7 @@ import { carbonJourney, when } from '../../data';
 import { BankCard, BankProcess } from '../../kit/bank';
 import { Button, Card, Pill, Skeleton } from '../../kit/core';
 import { Journey, type JourneyStep } from '../../kit/journey';
+import { useSimulatedBank } from '../../mode';
 import { Page } from '../../shell';
 
 const PROJECT = 'Food waste reduction (VM0046)';
@@ -33,6 +34,7 @@ export function Carbon({ session, paidRef }: { session: Session; paidRef?: strin
   const [checking, setChecking] = useState(false);
   const [share, setShare] = useState(false);
   const handled = useRef<string | null>(null);
+  const simulated = useSimulatedBank();
 
   useEffect(() => {
     api
@@ -199,16 +201,19 @@ export function Carbon({ session, paidRef }: { session: Session; paidRef?: strin
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="space-y-4 lg:col-span-5">
           <Card dark className="p-6">
-            <p className="t-14 flex items-center gap-2 font-semibold text-white/70">
-              <Leaf className="size-4 text-teal" /> Forge Carbon Registry · sandbox
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="t-14 flex items-center gap-2 font-semibold text-white/70">
+                <Leaf className="size-4 text-teal" /> {simulated ? 'Simulated registry' : 'Forge Carbon Registry · sandbox'}
+              </p>
+              {simulated && <Pill tone="amber">Demo mode · not real</Pill>}
+            </div>
             <p className="t-24 mt-2">{PROJECT}</p>
             <p className="t-14 mt-1 text-white/70">Food sold or donated before expiry · Lagos</p>
             <p className="t-12 mt-4 text-white/60">
-              Registry project: {c?.poolName ?? POOL}
+              Registry project: {simulated ? 'SecondShelf carbon pool (simulated)' : (c?.poolName ?? POOL)}
               {c?.projectId && <span className="mono"> · {c.projectId}</span>}
             </p>
-            <p className="t-12 mt-1 text-white/60">Sandbox registry · food-waste tonnes carried as solar-equivalent units</p>
+            <p className="t-12 mt-1 text-white/60">{simulated ? 'Simulated registry' : 'Sandbox registry'} · food-waste tonnes carried as solar-equivalent units</p>
           </Card>
 
           {busy ? (

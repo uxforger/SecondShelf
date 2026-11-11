@@ -2,6 +2,7 @@ import { AlertCircle, Check, ShieldCheck } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { ReactNode } from 'react';
 import { spring } from '../../lib/motion';
+import { useSimulatedBank } from '../mode';
 import { Button, Pill, Spinner, type Tone } from './core';
 
 /**
@@ -23,14 +24,19 @@ export function BankCard({
   children?: ReactNode;
   className?: string;
 }) {
+  const simulated = useSimulatedBank();
   return (
-    <div className={`rounded-[16px] bg-white p-4 ring-1 ring-hairline ${className}`}>
+    <div className={`rounded-[16px] bg-white p-4 ring-1 ${simulated ? 'ring-amber' : 'ring-hairline'} ${className}`}>
       <div className="flex items-start gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-forest text-lime">
           <ShieldCheck className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="t-12 font-semibold tracking-[0.06em] text-slate uppercase">Bank sandbox</p>
+          {simulated ? (
+            <p className="t-12 font-semibold tracking-[0.06em] text-amber-ink uppercase">Simulated bank · demo mode · not a real transfer</p>
+          ) : (
+            <p className="t-12 font-semibold tracking-[0.06em] text-slate uppercase">Bank sandbox</p>
+          )}
           <p className="truncate text-[1rem] leading-6 font-semibold text-ink">{title}</p>
           {reference && <p className="mono mt-0.5 truncate text-slate">{reference}</p>}
         </div>
