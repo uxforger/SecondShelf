@@ -26,8 +26,17 @@ The whole interface was rebuilt around the **batch** (one product, one expiry da
 
 **Removed:** the old `src/App.tsx`, `src/screens/`, `src/components/`, two unused hooks, the AI-generated photos in `public/images/` and `public/images/opt/`, and the empty `public/assets/`. The service-worker cache is bumped to `v2`.
 
-**Found while testing**
-- **Duplicate name enquiry.** Two simultaneous name enquiries for the same order make `POST /api/payouts/:id/enquire` fail with `UNIQUE constraint failed: payouts.order_id` (a 500). The v2 sheet now sends only one, but two devices enquiring at the same instant could still hit it. A server fix (insert-or-ignore, then re-read) is small, but the brief froze the server, so it is not changed.
+**Found while testing, fixed (approved separately)**
+- **Duplicate name enquiry** (`src/server/transfers.ts`). Two simultaneous name enquiries for one payout made `POST /api/payouts/:id/enquire` fail with `UNIQUE constraint failed: payouts.order_id`. Now the first insert wins and keeps its reference and idempotency key. A second enquiry only refreshes the name, and only while the payout hasn't started sending. Test: `src/server/transfers.test.ts`. The test script uses `--experimental-transform-types`, since the bank client's `BankError` uses parameter properties.
+- **Stale screens after overlapping refreshes** (`src/lib/mock/adapter.ts`). Poll, push and after-action pulls overlap; a slow older reply could land last and roll a screen back until the next poll (up to 2 s). Now only newer state is taken, or state from a new run (a reset or server restart).
+
+**Real sandbox run (11 Nov, deployed `1120b3a`, through the UI on three devices):**
+- Scan `2006001000030`, then list. The buyer pays `SS-93464` on `pay.xtradot.co`; "Paid" shows only after verify.
+- Handover by code, then a payout to the bank-resolved "BABATUNDE OLUMIDE ADEYEMI".
+- Consent and OTP lead to "Bank-verified". Loan: approved ₦640,000, score 850, accepted and sent.
+- MRV, then auto-verify. Sale `CC-MWBO56CC471` to `mer_900`, then retired as `ret_211` (serials `NG-AFF-2026-000007 to 000008`). The pool was paid ₦49,000 (`TRF-20261111-211`, by webhook), then ₦29,400 went to Ade Foods, then the certificate.
+- No errors from the app. The only console errors came from the bank's hosted checkout page (its own content-security policy). No other trader's name appeared.
+- **Live board timing:** in isolated probes, events appeared 0.25 to 0.85 s after the server replied, through the `kubectl port-forward` tunnel (about 0.6 s per request). In the three-device run, 8 of 10 events showed within 0.9 s; the handover took 1.9 s and the loan 3.4 s, while three browsers shared the one tunnel during the bank calls. The public URL sits behind Cloudflare Access, so it couldn't be timed directly.
 
 **Checks run (local demo mode, before the sandbox run)**
 - Playwright, three devices (buyer phone, distributor phone, Live board at 1920): scan → list → pay → handover → payout → consent → loan → carbon → certificate. No console errors. The board showed every event within 2 s (largest gap 1.9 s), and no other trader's name appears on any screen.
