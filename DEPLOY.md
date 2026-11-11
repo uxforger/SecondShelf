@@ -46,6 +46,13 @@ kubectl rollout status deployment/app
 ```
 Or pin a known-good tag: `sed "s/IMAGE_TAG/<old-sha>/" k8s/app.yaml | kubectl apply -f -`.
 
+**Back to the v1 interface** (git tag `v1-backup`, image `838ab4f`), keeping the storage patch:
+
+```bash
+kubectl set image deployment/app app=ghcr.io/uxforger/secondshelf:838ab4f
+kubectl rollout status deployment/app
+```
+
 Data is safe either way: it lives on the `app-data` volume (`/data/secondshelf.db`), not in the image.
 
 ## Current platform workarounds (10 Nov)

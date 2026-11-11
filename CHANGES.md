@@ -1,5 +1,38 @@
 # SecondShelf redesign: changes and demo script
 
+## Frontend v2 (branch `frontend-v2`, 11 Nov)
+
+The whole interface was rebuilt around the **batch** (one product, one expiry date, one quantity) and its journey: Scanned → Listed → Sold → Paid → Handed over → Paid out → Carbon. The previous interface is tagged **`v1-backup`** (`838ab4f`) for rollback.
+
+**Unchanged:** server, `/api` routes, data shapes, database, bank client, webhooks, payments, payouts, consent, loan and carbon logic. The v2 screens use the same API client (`src/lib/api`, `src/lib/mock/adapter.ts`). No new endpoints were needed.
+
+**New**
+- `src/ui/`: v2 app (`App.tsx`, `shell.tsx`), the kit (`kit/`: buttons, pills, cards, the draggable sheet, toasts, fields, 6-box OTP, journey timeline, Bank card, Bank process, scanner, QR) and `data.tsx`. Every number a screen shows is computed there from the one shared state, so no figure can disagree with itself.
+- Screens:
+  - Public: landing page and sign-in.
+  - Distributor: Home dashboard, Stock (five sections), Scan, Batch journey (one big button for the next step), List sheet, Sales, Handover, Money ledger, Passport (consent and stock loan), Carbon, Certificate, Live board.
+  - Buyer: Home, Offers, Product, Checkout, Paid, Orders.
+  - Food bank: Pickups.
+  - Credits page.
+- Each action returns to the batch with the next stage lit. For example, a handover lands on the batch with the payout sheet open.
+- **Photos:** one real photo per product, from Pexels, stored as WebP in `public/images/` (credits in `CREDITS.md` and at `/#/credits`). Fonts are bundled too (`public/fonts/`), so the demo needs no outside network.
+- **Visual system:** Forest, Leaf, Lime (money), Teal (carbon), Amber (expiry), Coral (errors only); Poppins and Inter; a 40/32/24/20/16/14/12 type scale. Buttons with white text use a slightly deeper leaf (`#18834A`) so they pass WCAG AA; Leaf `#1F9D55` itself is used for checks and progress.
+- **Toasts:** cross-device notices and toasts share one slot, bottom-centre above the tab bar on phones and bottom-right on desktop, and never cover the header or the navigation.
+
+**Data (demo content only, shapes unchanged)**
+- Five generic products added: granulated sugar, long-grain rice, spaghetti, vegetable oil and wheat flour. `FoodType` and `DRY_SHARE` in `src/lib/carbon.ts` gained their dry shares.
+- Reset now gives Ade Foods five live batches, each at a different stage. Seeded history orders carry their recorded payout, so the app never offers to pay out old history again.
+- Activity text "Passport shared with Access Bank" now reads "Passport shared with the bank", matching the Xtradot sandbox.
+
+**Removed:** the old `src/App.tsx`, `src/screens/`, `src/components/`, two unused hooks, the AI-generated photos in `public/images/` and `public/images/opt/`, and the empty `public/assets/`. The service-worker cache is bumped to `v2`.
+
+**Found while testing**
+- **Duplicate name enquiry.** Two simultaneous name enquiries for the same order make `POST /api/payouts/:id/enquire` fail with `UNIQUE constraint failed: payouts.order_id` (a 500). The v2 sheet now sends only one, but two devices enquiring at the same instant could still hit it. A server fix (insert-or-ignore, then re-read) is small, but the brief froze the server, so it is not changed.
+
+**Checks run (local demo mode, before the sandbox run)**
+- Playwright, three devices (buyer phone, distributor phone, Live board at 1920): scan → list → pay → handover → payout → consent → loan → carbon → certificate. No console errors. The board showed every event within 2 s (largest gap 1.9 s), and no other trader's name appears on any screen.
+- Screens checked at 360, 390, 768, 1280, 1440 and 1920, with the a11y scan for unnamed controls, alt text, labels, tap targets and headings.
+
 ## What changed
 
 **Removed**
