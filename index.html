@@ -15,27 +15,8 @@
     <link rel="icon" href="/logo.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Fonts load without blocking first paint; system font shows until Poppins swaps in. -->
-    <link
-      rel="preload"
-      as="style"
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
-      onload="this.onload=null;this.rel='stylesheet'"
-    />
-    <noscript>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" />
-    </noscript>
-    <!-- Sign-in photo: the first large paint on a fresh device. -->
-    <link
-      rel="preload"
-      as="image"
-      type="image/webp"
-      imagesrcset="/images/opt/secondshelf_market_woman_1794091354727-640.webp 640w, /images/opt/secondshelf_market_woman_1794091354727-960.webp 960w, /images/opt/secondshelf_market_woman_1794091354727-1280.webp 1280w"
-      imagesizes="(min-width: 1024px) 50vw, 100vw"
-      fetchpriority="high"
-    />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/inter-400-700.woff2" crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href="/fonts/poppins-600.woff2" crossorigin />
   </head>
   <body>
     <div id="root"></div>

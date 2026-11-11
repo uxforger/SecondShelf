@@ -1,200 +1,235 @@
 @import "tailwindcss";
 
 /* ------------------------------------------------------------------
-   Tokens. One source of truth: CSS variables, mapped into Tailwind.
+   SecondShelf v2 tokens. Lime = money, teal = carbon, amber = time
+   pressure, coral = errors only. Always paired with words.
    ------------------------------------------------------------------ */
-:root {
-  /* Brand */
-  --deep: #0b3b2e;
-  --green: #2e9b3a;
-  --amber: #f5b528;
-  --offwhite: #f6f8f3;
-  --mint: #e3ede0;
-  --body: #3d4f47;
-  --muted: #5a6e64;
 
-  /* Semantic */
-  --bg: var(--offwhite);
-  --surface: #ffffff;
-  --surface-raised: #ffffff;
-  --surface-sunken: #eef2ea;
-  --text: var(--deep);
-  --text-body: var(--body);
-  --text-muted: var(--muted);
-  --accent: var(--green);
-  --cta: var(--amber);
-  --success: var(--green);
-  --success-ink: #1f6b28;
-  --warning: var(--amber);
-  --warning-tint: #fdf1d3;
-  --warning-ink: #6e4a00;
-  --danger: #c2410c;
-  --danger-tint: #fdece4;
-  --hairline: rgba(11, 59, 46, 0.1);
-
-  /* Materials */
-  --material: rgba(246, 248, 243, 0.72);
-  --material-filter: blur(20px) saturate(180%);
-
-  /* Shadows: soft, green-tinted, deeper for bigger surfaces */
-  --shadow-sm: 0 1px 2px rgba(11, 59, 46, 0.06), 0 1px 1px rgba(11, 59, 46, 0.04);
-  --shadow-md: 0 4px 16px rgba(11, 59, 46, 0.08), 0 1px 2px rgba(11, 59, 46, 0.06);
-  --shadow-lg: 0 16px 48px rgba(11, 59, 46, 0.14), 0 2px 6px rgba(11, 59, 46, 0.06);
-
-  --tabbar-h: 64px;
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-top: env(safe-area-inset-top, 0px);
-
-  color-scheme: light;
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/inter-400-700.woff2") format("woff2");
+  font-weight: 400 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Poppins";
+  src: url("/fonts/poppins-500.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Poppins";
+  src: url("/fonts/poppins-600.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Poppins";
+  src: url("/fonts/poppins-700.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
 }
 
 @theme {
-  --font-sans: "Poppins", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Poppins", "Inter", ui-sans-serif, system-ui, sans-serif;
 
-  --color-deep: #0b3b2e;
-  --color-green: #2e9b3a;
+  --color-forest: #0b3b2e;
+  --color-leaf: #1f9d55;
+  /* Button fill: leaf, one step deeper so white text passes WCAG AA. */
+  --color-leaf-strong: #18834a;
+  --color-leaf-tint: #e4f4ea;
+  --color-lime: #c8f169;
+  --color-lime-tint: #f1fbd9;
+  --color-teal: #14b8a6;
+  --color-teal-ink: #0f766e;
+  --color-teal-tint: #dcf6f2;
   --color-amber: #f5b528;
-  --color-offwhite: #f6f8f3;
-  --color-mint: #e3ede0;
-  --color-body: #3d4f47;
-  --color-muted: #5a6e64;
-  --color-bg: var(--bg);
-  --color-surface: var(--surface);
-  --color-sunken: var(--surface-sunken);
-  --color-success-ink: var(--success-ink);
-  --color-warning-tint: var(--warning-tint);
-  --color-warning-ink: var(--warning-ink);
-  --color-danger: var(--danger);
-  --color-danger-tint: var(--danger-tint);
-  --color-hairline: var(--hairline);
+  --color-amber-ink: #7a5200;
+  --color-amber-tint: #fdf1d3;
+  --color-coral: #f2694a;
+  --color-coral-ink: #b23a1e;
+  --color-coral-tint: #fde8e2;
+  --color-ink: #0f1f1a;
+  --color-slate: #5b6b65;
+  --color-paper: #f7f8f4;
+  --color-hairline: #e6eae4;
+  --color-sunken: #eef1ea;
+  --color-night: #07231b;
+  --color-night-2: #0d3327;
 
-  --radius-input: 12px;
-  --radius-card: 20px;
-  --radius-sheet: 28px;
+  --radius-card: 16px;
+  --radius-sheet: 24px;
 
-  --shadow-soft: var(--shadow-sm);
-  --shadow-card: var(--shadow-md);
-  --shadow-sheet: var(--shadow-lg);
+  --shadow-soft: 0 1px 2px rgba(15, 31, 26, 0.05), 0 2px 8px rgba(15, 31, 26, 0.04);
+  --shadow-card: 0 1px 2px rgba(15, 31, 26, 0.05), 0 8px 24px rgba(15, 31, 26, 0.06);
+  --shadow-lift: 0 2px 6px rgba(15, 31, 26, 0.06), 0 18px 48px rgba(15, 31, 26, 0.12);
+  --shadow-sheet: 0 -2px 8px rgba(15, 31, 26, 0.06), 0 -24px 64px rgba(15, 31, 26, 0.14);
 
+  --breakpoint-xs: 360px;
 }
 
-/* ------------------------------------------------------------------
-   Type scale (Poppins). Size-specific tracking and leading.
-   ------------------------------------------------------------------ */
-@utility t-display {
-  font-size: 2.5rem;
-  line-height: 2.75rem;
-  letter-spacing: -0.02em;
-  font-weight: 700;
-  @media (width >= 1024px) {
-    font-size: 3.5rem;
-    line-height: 3.75rem;
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --tabbar-h: 64px;
+  --material: rgba(247, 248, 244, 0.76);
+  --material-dark: rgba(7, 35, 27, 0.72);
+  --material-filter: blur(20px) saturate(180%);
+  color-scheme: light;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+  body {
+    margin: 0;
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.5;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  :focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--color-leaf) 60%, transparent);
+    outline-offset: 2px;
+  }
+  button {
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+  }
+  button:disabled {
+    cursor: default;
+  }
+  img {
+    display: block;
+  }
+  ::selection {
+    background: var(--color-lime);
+    color: var(--color-forest);
   }
 }
-@utility t-title {
-  font-size: 1.75rem;
-  line-height: 2.125rem;
-  letter-spacing: -0.01em;
+
+/* Type scale 40/32/24/20/16/14/12. Tracking tightens as size grows. */
+@utility t-40 {
+  font-family: var(--font-display);
   font-weight: 600;
+  font-size: 2.5rem;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
 }
-@utility t-heading {
+@utility t-32 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 2rem;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+}
+@utility t-24 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+@utility t-20 {
+  font-family: var(--font-display);
+  font-weight: 600;
   font-size: 1.25rem;
-  line-height: 1.75rem;
-  letter-spacing: -0.005em;
-  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
 }
-@utility t-body {
+@utility t-16 {
   font-size: 1rem;
-  line-height: 1.5rem;
-  letter-spacing: 0;
-  font-weight: 400;
+  line-height: 1.5;
 }
-@utility t-label {
+@utility t-14 {
   font-size: 0.875rem;
-  line-height: 1.25rem;
-  letter-spacing: 0.01em;
-  font-weight: 500;
+  line-height: 1.43;
+  letter-spacing: 0.005em;
 }
-@utility t-caption {
+@utility t-12 {
   font-size: 0.75rem;
-  line-height: 1rem;
+  line-height: 1.34;
   letter-spacing: 0.02em;
-  font-weight: 500;
 }
 @utility num {
   font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
+  font-feature-settings: "tnum";
+}
+@utility mono {
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  font-size: 0.875em;
+  letter-spacing: 0;
 }
 @utility material {
   background: var(--material);
   -webkit-backdrop-filter: var(--material-filter);
   backdrop-filter: var(--material-filter);
 }
-@utility pb-safe {
-  padding-bottom: var(--safe-bottom);
+@utility material-dark {
+  background: var(--material-dark);
+  -webkit-backdrop-filter: var(--material-filter);
+  backdrop-filter: var(--material-filter);
 }
-@utility pt-safe {
-  padding-top: var(--safe-top);
+@utility press {
+  transition: transform 100ms ease-out;
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
 }
-
-/* ------------------------------------------------------------------
-   Base
-   ------------------------------------------------------------------ */
-@layer base {
-  html {
-    -webkit-text-size-adjust: 100%;
-    -webkit-tap-highlight-color: transparent;
-    background: var(--bg);
-  }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--text-body);
-    font-family: var(--font-sans);
-    font-size: 1rem;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
-    overscroll-behavior-y: none;
-  }
-  h1,
-  h2,
-  h3 {
-    color: var(--text);
-    margin: 0;
-  }
-  button {
-    font: inherit;
-    color: inherit;
-    cursor: pointer;
-    touch-action: manipulation;
-  }
-  button:disabled {
-    cursor: not-allowed;
-  }
-  input,
-  select,
-  textarea {
-    font: inherit;
-    color: var(--text);
-  }
-  img {
-    display: block;
-    max-width: 100%;
-  }
-  :focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-  ::selection {
-    background: rgba(46, 155, 58, 0.2);
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
 }
 
-/* ------------------------------------------------------------------
-   Range slider (discount control)
-   ------------------------------------------------------------------ */
+/* Skeleton shimmer. */
+.skeleton {
+  background: linear-gradient(90deg, var(--color-sunken) 0%, #f6f8f3 50%, var(--color-sunken) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Scanner sweep line. */
+.sweep {
+  animation: sweep 2.2s ease-in-out infinite alternate;
+}
+@keyframes sweep {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(var(--sweep, 120px));
+  }
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Discount slider. */
 .range {
   -webkit-appearance: none;
   appearance: none;
@@ -204,125 +239,68 @@
   touch-action: pan-y;
 }
 .range::-webkit-slider-runnable-track {
-  height: 6px;
+  height: 8px;
   border-radius: 999px;
-  background: linear-gradient(to right, var(--deep) var(--fill, 0%), var(--surface-sunken) var(--fill, 0%));
+  background: linear-gradient(to right, var(--color-leaf) var(--fill, 50%), var(--color-hairline) var(--fill, 50%));
 }
 .range::-moz-range-track {
-  height: 6px;
+  height: 8px;
   border-radius: 999px;
-  background: linear-gradient(to right, var(--deep) var(--fill, 0%), var(--surface-sunken) var(--fill, 0%));
+  background: var(--color-hairline);
+}
+.range::-moz-range-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-leaf);
 }
 .range::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 28px;
   height: 28px;
-  margin-top: -11px;
+  margin-top: -10px;
   border-radius: 999px;
   background: #fff;
-  border: 0;
-  box-shadow: 0 2px 8px rgba(11, 59, 46, 0.25), 0 0 0 0.5px rgba(11, 59, 46, 0.15);
+  box-shadow: 0 1px 3px rgba(15, 31, 26, 0.25), 0 0 0 1px rgba(15, 31, 26, 0.06);
 }
 .range::-moz-range-thumb {
   width: 28px;
   height: 28px;
+  border: 0;
   border-radius: 999px;
   background: #fff;
-  border: 0;
-  box-shadow: 0 2px 8px rgba(11, 59, 46, 0.25), 0 0 0 0.5px rgba(11, 59, 46, 0.15);
+  box-shadow: 0 1px 3px rgba(15, 31, 26, 0.25), 0 0 0 1px rgba(15, 31, 26, 0.06);
 }
 .range:focus-visible {
   outline: none;
 }
 .range:focus-visible::-webkit-slider-thumb {
-  outline: 2px solid var(--accent);
+  outline: 3px solid color-mix(in srgb, var(--color-leaf) 60%, transparent);
   outline-offset: 2px;
 }
 
-/* ------------------------------------------------------------------
-   Ambient loops (only when motion is welcome)
-   ------------------------------------------------------------------ */
-@keyframes shimmer {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.55;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-@keyframes breathe {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.025);
-  }
-}
-@keyframes sweep {
-  0% {
-    transform: translateY(0);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  90% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(var(--sweep, 160px));
-    opacity: 0;
-  }
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-.spinner {
-  animation: spin 0.8s linear infinite;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .skeleton {
-    animation: shimmer 1.4s ease-in-out infinite;
-  }
-  .breathe {
-    animation: breathe 2.4s ease-in-out infinite;
-  }
-  .sweep {
-    animation: sweep 2.2s ease-in-out infinite;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .skeleton,
+  .sweep,
   .spinner {
-    animation-duration: 2.4s;
+    animation-duration: 0s;
+    animation-iteration-count: 1;
   }
 }
-
-/* ------------------------------------------------------------------
-   Accessibility preferences
-   ------------------------------------------------------------------ */
 @media (prefers-reduced-transparency: reduce) {
-  :root {
-    --material: var(--bg);
-    --material-filter: none;
+  .material {
+    background: var(--color-paper);
+    backdrop-filter: none;
+  }
+  .material-dark {
+    background: var(--color-night);
+    backdrop-filter: none;
   }
 }
 @media (prefers-contrast: more) {
   :root {
-    --muted: #3d4f47;
-    --text-muted: #3d4f47;
-    --hairline: rgba(11, 59, 46, 0.35);
-    --material: var(--bg);
-    --material-filter: none;
+    --material: var(--color-paper);
   }
-}
-
-/* One icon weight everywhere. */
-svg.lucide {
-  stroke-width: 1.75;
 }

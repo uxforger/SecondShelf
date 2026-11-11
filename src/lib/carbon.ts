@@ -13,7 +13,7 @@ export const LATER_WASTE = 0.12;
 /** Light van, one way, per km (t CO2e). */
 export const VAN_T_PER_KM = 0.00025;
 
-export type FoodType = 'crackers' | 'biscuits' | 'noodles' | 'milk' | 'drink';
+export type FoodType = 'crackers' | 'biscuits' | 'noodles' | 'milk' | 'drink' | 'sugar' | 'rice' | 'pasta' | 'oil' | 'flour';
 
 export const DRY_SHARE: Record<FoodType, number> = {
   crackers: 0.95,
@@ -21,6 +21,11 @@ export const DRY_SHARE: Record<FoodType, number> = {
   noodles: 0.94,
   milk: 0.96,
   drink: 0.12,
+  sugar: 1.0,
+  rice: 0.88,
+  pasta: 0.9,
+  oil: 1.0,
+  flour: 0.88,
 };
 
 export interface CarbonInput {

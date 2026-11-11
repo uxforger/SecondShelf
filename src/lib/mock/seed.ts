@@ -22,27 +22,25 @@ export function seed(now: Date = new Date()): Db {
   const businesses = [DISTRIBUTOR, BUYER, FOOD_BANK, ...PAST_BUYERS];
   const dist = (id: string) => businesses.find((b) => b.id === id)!.distanceKm;
 
+  // Five live batches, each at a different stage. Milk powder (2006001000030) is scanned on stage.
   const live: Batch[] = [
-    { id: 'b-crackers', productId: 'p-crackers', batchNo: 'CC-2410', expiry: addDays(day, 40), quantity: 48 },
-    { id: 'b-noodles', productId: 'p-noodles', batchNo: 'IN-0918', expiry: addDays(day, 12), quantity: 30 },
-    { id: 'b-milk', productId: 'p-milk', batchNo: 'MP-1102', expiry: addDays(day, 75), quantity: 20 },
+    // Expiring soon, not listed: the "Next action".
+    { id: 'b-noodles', productId: 'p-noodles', batchNo: 'IN-0918', expiry: addDays(day, 9), quantity: 30 },
+    // Inside the six-week window, not listed yet.
+    { id: 'b-sugar', productId: 'p-sugar', batchNo: 'GS-1004', expiry: addDays(day, 26), quantity: 12 },
+    // Listed and waiting for a buyer.
     {
       id: 'b-digestive',
       productId: 'p-digestive',
       batchNo: 'DB-0930',
-      expiry: addDays(day, 25),
+      expiry: addDays(day, 21),
       quantity: 36,
       listing: { discountPct: 30, unitPrice: discountedPrice(7200, 30), listedAt: at(now, -2, 9, 40) },
     },
-    {
-      id: 'b-drink',
-      productId: 'p-drink',
-      batchNo: 'FD-0815',
-      expiry: addDays(day, 18),
-      quantity: 24,
-      listing: { discountPct: 35, unitPrice: discountedPrice(8400, 35), listedAt: at(now, -1, 15, 10) },
-    },
-    { id: 'b-drink-old', productId: 'p-drink', batchNo: 'FD-0702', expiry: addDays(day, -3), quantity: 6 },
+    // Healthy stock.
+    { id: 'b-rice', productId: 'p-rice', batchNo: 'LR-1101', expiry: addDays(day, 120), quantity: 16 },
+    // Expired before it could be sold.
+    { id: 'b-flour-old', productId: 'p-flour', batchNo: 'WF-0702', expiry: addDays(day, -3), quantity: 6 },
   ].map((b, i) => ({
     ...b,
     sellerId: DISTRIBUTOR.id,
@@ -117,6 +115,16 @@ export function seed(now: Date = new Date()): Db {
         paidAt,
         handedOverAt: at(now, daysAgo, 15, 20),
         distanceKm: dist(buyerId),
+        // History: already paid out (synthetic, before this demo run).
+        payout: {
+          status: 'successful',
+          accountName: 'BABATUNDE OLUMIDE ADEYEMI',
+          accountNumber: '0123456790',
+          bankName: 'Xtradot Bank',
+          amount: unitPrice * qty,
+          reference: `PO-${ref - 1}`,
+          at: at(now, daysAgo, 15, 40),
+        },
       });
     }
   }
@@ -157,21 +165,14 @@ export function seed(now: Date = new Date()): Db {
   const recent = [...orders].sort((a, b) => b.paidAt.localeCompare(a.paidAt)).slice(0, 6);
   const activity: Activity[] = ([
     {
-      id: 'a-drink-listed',
-      at: live[4].listing!.listedAt,
-      kind: 'listed',
-      title: 'Listed Fruit drink',
-      detail: '35% off · 24 cartons',
-      businessIds: [DISTRIBUTOR.id],
-    },
-    {
       id: 'a-dig-listed',
-      at: live[3].listing!.listedAt,
+      at: live[2].listing!.listedAt,
       kind: 'listed',
       title: 'Listed Digestive biscuits',
       detail: '30% off · 36 cartons',
       businessIds: [DISTRIBUTOR.id],
-    },
+      batchId: 'b-digestive',
+    } as Activity,
     ...recent.map<Activity>((o) => ({
       id: `a-${o.id}`,
       at: o.handedOverAt!,
