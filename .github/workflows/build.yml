@@ -1,11 +1,11 @@
 name: build
 
-# Every push to "redesign": check, then build linux/amd64 images and push to
+# Every push to "redesign" or "frontend-v2": check, then build linux/amd64 images and push to
 # GitHub Container Registry, tagged with the short git SHA. No Docker needed
 # on anyone's laptop. Uses the built-in GITHUB_TOKEN only.
 on:
   push:
-    branches: [redesign]
+    branches: [redesign, frontend-v2]
   workflow_dispatch:
 
 permissions:
