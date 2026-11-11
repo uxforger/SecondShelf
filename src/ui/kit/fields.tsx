@@ -1,6 +1,6 @@
 import { Eye, EyeOff, Minus, Plus } from 'lucide-react';
 import { motion } from 'motion/react';
-import { forwardRef, useId, useRef, useState, type InputHTMLAttributes, type ReactNode } from 'react';
+import { forwardRef, useEffect, useId, useRef, useState, type InputHTMLAttributes, type ReactNode } from 'react';
 import { pressSpring, spring } from '../../lib/motion';
 
 /* ------------------------------------------------------------------ */
@@ -168,6 +168,11 @@ export function OtpBoxes({ value, onChange, disabled, error, label = 'One-time c
   const ref = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
   const digits = value.padEnd(6, ' ').slice(0, 6).split('');
+  // Ready to type the moment the code step appears (opens the phone keyboard).
+  useEffect(() => {
+    const t = window.setTimeout(() => ref.current?.focus({ preventScroll: true }), 60);
+    return () => window.clearTimeout(t);
+  }, []);
   return (
     <div className="relative" onClick={() => ref.current?.focus()}>
       <input

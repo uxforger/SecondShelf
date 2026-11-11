@@ -16,6 +16,10 @@ import { Scan } from './screens/distributor/Scan';
 import { Stock } from './screens/distributor/Stock';
 import { Handover } from './screens/distributor/Handover';
 import { Sales } from './screens/distributor/Sales';
+import { Carbon } from './screens/distributor/Carbon';
+import { Certificate } from './screens/distributor/Certificate';
+import { Money } from './screens/distributor/Money';
+import { Passport } from './screens/distributor/Passport';
 import { BuyerHome } from './screens/buyer/BuyerHome';
 import { OrderDetail, Orders } from './screens/buyer/Orders';
 import { Paid } from './screens/buyer/Paid';
@@ -47,7 +51,17 @@ function resolve(path: string, session: Session): Resolved | null {
         return { key: clean, el: <Sales session={session} /> };
       case '/handover':
         return { key: clean, el: <Handover />, bare: true };
+      case '/money':
+        return { key: clean, el: <Money session={session} /> };
+      case '/passport':
+        return { key: clean, el: <Passport session={session} /> };
+      case '/carbon':
+        return { key: clean, el: <Carbon session={session} /> };
     }
+    const paid = match('/carbon/paid/:ref', clean);
+    if (paid) return { key: '/carbon', el: <Carbon session={session} paidRef={paid.ref} /> };
+    const cert = match('/carbon/certificate/:id', clean);
+    if (cert) return { key: clean, el: <Certificate id={cert.id} />, bare: true };
     const batch = match('/batch/:id', clean);
     if (batch) return { key: clean, el: <BatchJourney id={batch.id} session={session} /> };
     const ho = match('/handover/:ref', clean);
