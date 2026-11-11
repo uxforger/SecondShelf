@@ -48,7 +48,7 @@ export function Home({ session }: { session: Session }) {
                 <div className="p-5 sm:p-6 lg:p-8">
                   <Pill tone="amber">{expiryWords(hero.days)}</Pill>
                   <p className="t-14 mt-4 font-semibold tracking-[0.06em] text-white/60 uppercase">Next action</p>
-                  <button type="button" onClick={() => navigate(`/batch/${hero.batch.id}`)} className="t-32 mt-1 text-left text-white underline-offset-4 hover:underline lg:t-40">
+                  <button type="button" onClick={() => navigate(`/batch/${hero.batch.id}`)} className="t-32 mt-1 min-h-11 text-left text-white underline-offset-4 hover:underline lg:t-40">
                     {hero.product.name}
                   </button>
                   <p className="t-16 num mt-1 text-white/75">

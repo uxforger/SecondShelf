@@ -238,6 +238,8 @@ export function needsAction(db: Db): BatchInfo[] {
 
 export interface Kpis {
   recoveredThisMonth: number;
+  /** Order payouts this month (bank-confirmed). */
+  paidOutThisMonth: number;
   soldBeforeExpiryPct: number;
   carbonAvoidedT: number;
   verifiedSales90: number;
@@ -247,7 +249,10 @@ export interface Kpis {
 export function kpis(db: Db): Kpis {
   const m = metrics(db, SELLER);
   const recoveredThisMonth = db.orders.filter((o) => o.sellerId === SELLER && isThisMonth(o.paidAt)).reduce((n, o) => n + o.total, 0);
-  return { recoveredThisMonth, soldBeforeExpiryPct: m.soldBeforeExpiryPct, carbonAvoidedT: m.co2eVerified, verifiedSales90: m.verifiedSales90, foodRescuedKg: m.foodRescuedKg };
+  const paidOutThisMonth = db.orders
+    .filter((o) => o.sellerId === SELLER && o.payout?.status === 'successful' && isThisMonth(o.payout.at))
+    .reduce((n, o) => n + (o.payout?.amount ?? 0), 0);
+  return { recoveredThisMonth, paidOutThisMonth, soldBeforeExpiryPct: m.soldBeforeExpiryPct, carbonAvoidedT: m.co2eVerified, verifiedSales90: m.verifiedSales90, foodRescuedKg: m.foodRescuedKg };
 }
 
 /* ------------------------------------------------------------------ */

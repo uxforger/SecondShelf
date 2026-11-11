@@ -161,9 +161,9 @@ export function Landing() {
         </div>
         <div className="t-14 flex flex-wrap items-center gap-x-4 gap-y-2 text-slate">
           <span className="rounded-full bg-sunken px-3 py-1 font-medium">Bank sandbox demo</span>
-          <a href="https://github.com/uxforger/SecondShelf/blob/frontend-v2/CREDITS.md" target="_blank" rel="noreferrer" className="underline underline-offset-4 hover:text-ink">
+          <button type="button" onClick={() => navigate('/credits')} className="min-h-10 underline underline-offset-4 hover:text-ink">
             Photo credits
-          </a>
+          </button>
         </div>
       </footer>
     </div>

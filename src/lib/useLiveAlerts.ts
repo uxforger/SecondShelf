@@ -112,7 +112,8 @@ function announce(db: Db, a: Activity, session: Session, path: string) {
       });
     }
     // Something just scanned in that is already inside the window.
-    if (a.kind === 'added' && v && v.days > 0 && v.days <= 42) {
+    // Not on the phone that just scanned it: its batch page already leads with "List it".
+    if (a.kind === 'added' && v && v.days > 0 && v.days <= 42 && !path.startsWith('/scan') && path !== `/batch/${v.batch.id}`) {
       banner({
         icon: 'alert',
         title: `${v.product.name} · ${timeLeftLabel(v.days)} left`,

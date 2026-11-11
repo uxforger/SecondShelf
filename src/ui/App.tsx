@@ -6,7 +6,7 @@ import { match, navigate, useRoute } from '../lib/router';
 import { useSession } from '../lib/store';
 import { useLiveAlerts } from '../lib/useLiveAlerts';
 import { Toasts } from './kit/toasts';
-import { Kit } from './screens/Kit';
+import { Credits } from './screens/Credits';
 import { Landing } from './screens/Landing';
 import { Profile } from './screens/Profile';
 import { SignIn } from './screens/SignIn';
@@ -20,6 +20,7 @@ import { Carbon } from './screens/distributor/Carbon';
 import { Certificate } from './screens/distributor/Certificate';
 import { Money } from './screens/distributor/Money';
 import { Passport } from './screens/distributor/Passport';
+import { Live } from './screens/distributor/Live';
 import { BuyerHome } from './screens/buyer/BuyerHome';
 import { OrderDetail, Orders } from './screens/buyer/Orders';
 import { Paid } from './screens/buyer/Paid';
@@ -57,6 +58,8 @@ function resolve(path: string, session: Session): Resolved | null {
         return { key: clean, el: <Passport session={session} /> };
       case '/carbon':
         return { key: clean, el: <Carbon session={session} /> };
+      case '/live':
+        return { key: clean, el: <Live />, bare: true };
     }
     const paid = match('/carbon/paid/:ref', clean);
     if (paid) return { key: '/carbon', el: <Carbon session={session} paidRef={paid.ref} /> };
@@ -89,7 +92,7 @@ export default function App() {
   const { path } = useRoute();
   const clean = path.split('?')[0];
 
-  if (clean.startsWith('/kit')) return <Kit />;
+  if (clean === '/credits') return <Credits />;
   if (!session) {
     if (clean === '/signin') return <SignIn />;
     return <Landing />;

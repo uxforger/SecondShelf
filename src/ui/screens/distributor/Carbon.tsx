@@ -137,7 +137,7 @@ export function Carbon({ session, paidRef }: { session: Session; paidRef?: strin
       time: when(sub?.submittedAt),
       value: sub ? `${sub.kwh.toLocaleString('en-US')} kWh` : undefined,
       detail: sub ? (
-        <a className="font-medium text-forest underline underline-offset-2" href={`/evidence/${encodeURIComponent(sub.evidenceId)}`} target="_blank" rel="noreferrer">
+        <a className="inline-flex min-h-10 items-center gap-1 font-medium text-forest underline underline-offset-2" href={`/evidence/${encodeURIComponent(sub.evidenceId)}`} target="_blank" rel="noreferrer">
           Evidence <ExternalLink className="inline size-3.5 align-[-2px]" />
         </a>
       ) : (

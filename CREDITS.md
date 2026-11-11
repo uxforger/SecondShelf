@@ -14,7 +14,7 @@ All photos are from [Pexels](https://www.pexels.com) under the [Pexels License](
 | `products/pasta.webp` | Spaghetti | [Pasta](https://www.pexels.com/photo/pasta-262905/) | Pixabay |
 | `products/cooking-oil.webp` | Vegetable oil | [Clear Plastic Bottles With Yellow Liquid](https://www.pexels.com/photo/clear-plastic-bottles-with-yellow-liquid-12284682/) | Towfiqu barbhuiya |
 | `products/flour.webp` | Wheat flour | [Flour in Bowl next to Spoons](https://www.pexels.com/photo/flour-in-bowl-next-to-spoons-10994433/) | Diana Light |
-| `market/lagos-market.webp` | Landing hero | [Crowded City Street](https://www.pexels.com/photo/crowded-city-street-16155217/) (Lagos) | David Iloba |
-| `market/lagos-vendor.webp` | Sign-in | [Woman Selling Vegetables on a Market on a Street](https://www.pexels.com/photo/woman-selling-vegetables-on-a-market-on-a-street-14881680/) (Lagos) | David Iloba |
+| `market/lagos-market.webp` | Sign-in | [Crowded City Street](https://www.pexels.com/photo/crowded-city-street-16155217/) (Lagos) | David Iloba |
+| `market/lagos-vendor.webp` | Landing hero | [Woman Selling Vegetables on a Market on a Street](https://www.pexels.com/photo/woman-selling-vegetables-on-a-market-on-a-street-14881680/) (Lagos) | David Iloba |
 
-No product photo shows a readable brand. Product names in the app are generic.
+No product photo shows a readable brand. Product names in the app are generic. The same list is in the app at `/#/credits` (landing page footer, "Photo credits").

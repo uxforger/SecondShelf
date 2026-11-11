@@ -258,7 +258,7 @@ export function reduce(db: Db, action: Action): Db {
         activity: withActivity(db, {
           at: action.at,
           kind: 'shared',
-          title: 'Passport shared with Access Bank',
+          title: 'Passport shared with the bank',
           detail: `${action.statement.transactions} bank transactions read with consent`,
           businessIds: ['biz-ade'],
         }),

@@ -1,6 +1,6 @@
 // App shell cache. Navigations: network first, cached shell offline.
 // Hashed assets and images: cache first. Demo sync is never cached.
-const CACHE = 'secondshelf-v1';
+const CACHE = 'secondshelf-v2';
 const SHELL = ['/', '/manifest.webmanifest', '/logo.svg', '/icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {
@@ -34,7 +34,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/images/') || url.pathname.startsWith('/icons/')) {
+  if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/images/') || url.pathname.startsWith('/icons/') || url.pathname.startsWith('/fonts/')) {
     e.respondWith(
       caches.match(req).then(
         (hit) =>
