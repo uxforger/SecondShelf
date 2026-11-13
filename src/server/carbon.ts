@@ -113,9 +113,10 @@ export async function ensureProject(): Promise<CarbonState> {
   const existing = getDb().carbon;
   if (existing?.projectId && existing.registry === mode) return { ...existing, projectName: PROJECT_NAME, poolName: POOL_NAME, sales: existing.sales ?? [] };
 
-  // The one pool project, pinned so a pod that lost its disk never registers another.
+  // The one pool project, pinned so a pod that lost its disk never registers another
+  // (unless the registry already told us that id is gone; see reRegisterProject).
   const pinned = process.env.CARBON_PROJECT_ID;
-  const stored = kvGet(POOL_KEY) ?? (pinned ? JSON.stringify({ id: pinned, accountName: process.env.CARBON_POOL_NAME || 'AREWA SOLAR CO-OPERATIVE SOCIETY' }) : null);
+  const stored = kvGet(POOL_KEY) ?? (pinned && pinned !== kvGet(STALE_KEY) ? JSON.stringify({ id: pinned, accountName: process.env.CARBON_POOL_NAME || 'AREWA SOLAR CO-OPERATIVE SOCIETY' }) : null);
   if (stored && mode === 'sandbox') {
     const { id, accountName } = JSON.parse(stored) as { id: string; accountName?: string };
     const carbon = fresh({ registry: 'sandbox', projectId: id, payoutAccountName: accountName });
@@ -141,6 +142,40 @@ export async function ensureProject(): Promise<CarbonState> {
 }
 
 export const registrationResult = () => kvGet(POOL_KEY);
+
+const STALE_KEY = 'carbon_pool_stale';
+
+/** The registry answered 404 for this project id (e.g. the sandbox was reset). */
+export const isMissingProject = (e: unknown) => e instanceof BankError && e.httpStatus === 404 && e.code === 'NOT_FOUND';
+
+/**
+ * The registry no longer knows our pool project (sandbox reset). Register the
+ * pool again once, keep our local history, and point the state at the new id.
+ */
+export async function reRegisterProject(staleId: string): Promise<CarbonState> {
+  if (bank.mode === 'mock') throw new ApiError('The simulated registry lost the carbon project.');
+  console.log(`[carbon] registry has no project ${staleId}; registering the pool again`);
+  kvSet(STALE_KEY, staleId);
+  sql.prepare('DELETE FROM kv WHERE key IN (?, ?)').run(POOL_KEY, 'carbon_pool_idem');
+  const p = await withKey('carbon_pool_idem', (idempotencyKey) =>
+    registry().createCarbonProject({
+      name: POOL_NAME,
+      type: REGISTRY_TYPE,
+      methodology: REGISTRY_METHODOLOGY,
+      location: { state: 'Lagos', lga: 'Mushin', lat: 6.5355, lng: 3.3487 },
+      owner: POOL_OWNER,
+      idempotencyKey,
+    }),
+  );
+  kvSet(POOL_KEY, JSON.stringify({ id: p.id, accountName: p.payoutAccountName }));
+  console.log(`[carbon] pool project ${p.id} ${p.status}`);
+  const latest = getDb().carbon;
+  const carbon: CarbonState = latest
+    ? { ...latest, registry: 'sandbox', projectId: p.id, payoutAccountName: p.payoutAccountName ?? latest.payoutAccountName }
+    : fresh({ registry: 'sandbox', projectId: p.id, payoutAccountName: p.payoutAccountName });
+  save(carbon, { title: 'Carbon pool registered', detail: `${POOL_NAME} · Forge Carbon Registry` });
+  return carbon;
+}
 
 /* ---------------- What can be reported ---------------- */
 
@@ -313,17 +348,26 @@ export async function submitMrv(): Promise<CarbonSubmission> {
     .prepare('INSERT OR IGNORE INTO carbon_evidence (id, mrv_id, items_json, tco2e, kwh, period_from, period_to, created_at) VALUES (?, NULL, ?, ?, ?, ?, ?, ?)')
     .run(evidenceId, JSON.stringify(items), tco2e, kwh, periodStart, periodEnd, now());
 
-  const r = await withKey(`mrv_idem_${hash.slice(0, 24)}`, (idempotencyKey) =>
-    registry().submitMrv({
-      projectId: carbon.projectId,
-      periodFrom: periodStart,
-      periodTo: periodEnd,
-      metric: 'energy_generated_kwh',
-      value: kwh,
-      evidenceUrl: `${PUBLIC_URL}/evidence/${evidenceId}`,
-      idempotencyKey,
-    }),
-  );
+  const send = (projectId: string) =>
+    withKey(`mrv_idem_${hash.slice(0, 24)}`, (idempotencyKey) =>
+      registry().submitMrv({
+        projectId,
+        periodFrom: periodStart,
+        periodTo: periodEnd,
+        metric: 'energy_generated_kwh',
+        value: kwh,
+        evidenceUrl: `${PUBLIC_URL}/evidence/${evidenceId}`,
+        idempotencyKey,
+      }),
+    );
+  let r;
+  try {
+    r = await send(carbon.projectId);
+  } catch (e) {
+    // Sandbox reset wiped the pool project: register it again once and resend.
+    if (!isMissingProject(e) || bank.mode === 'mock') throw e;
+    r = await send((await reRegisterProject(carbon.projectId)).projectId);
+  }
   sql.prepare('UPDATE carbon_evidence SET mrv_id = ? WHERE id = ?').run(r.id, evidenceId);
   const sub: CarbonSubmission = {
     mrvId: r.id,
